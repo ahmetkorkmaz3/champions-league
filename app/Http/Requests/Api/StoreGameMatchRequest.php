@@ -24,7 +24,7 @@ class StoreGameMatchRequest extends FormRequest
         return [
             'home_team_id' => 'required|exists:teams,id',
             'away_team_id' => 'required|exists:teams,id|different:home_team_id',
-            'week' => 'required|integer|min:1|max:10',
+            'week' => 'required|integer|min:1|max:6',
             'home_score' => 'nullable|integer|min:0',
             'away_score' => 'nullable|integer|min:0',
             'is_played' => 'boolean',

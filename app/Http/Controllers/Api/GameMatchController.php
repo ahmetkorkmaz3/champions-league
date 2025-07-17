@@ -7,6 +7,7 @@ use App\Http\Requests\Api\StoreGameMatchRequest;
 use App\Http\Requests\Api\UpdateGameMatchRequest;
 use App\Http\Resources\GameMatchResource;
 use App\Models\GameMatch;
+use App\Services\LeagueService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -36,9 +37,11 @@ class GameMatchController extends Controller
     /**
      * Store a newly created match
      */
-    public function store(StoreGameMatchRequest $request): Response
+    public function store(StoreGameMatchRequest $request, LeagueService $leagueService): Response
     {
-        GameMatch::create($request->validated());
+        $match = GameMatch::create($request->validated());
+
+        $leagueService->updateStandingsForMatch($match);
 
         return response()->noContent(201);
     }
@@ -56,9 +59,11 @@ class GameMatchController extends Controller
     /**
      * Update the specified match
      */
-    public function update(UpdateGameMatchRequest $request, GameMatch $match): JsonResponse
+    public function update(UpdateGameMatchRequest $request, GameMatch $match, LeagueService $leagueService): JsonResponse
     {
         $match->update($request->validated());
+
+        $leagueService->updateStandingsForMatch($match->fresh());
 
         // Return updated data
         $matches = GameMatch::with(['homeTeam', 'awayTeam'])
@@ -84,9 +89,18 @@ class GameMatchController extends Controller
     /**
      * Remove the specified match
      */
-    public function destroy(GameMatch $match): Response
+    public function destroy(GameMatch $match, LeagueService $leagueService): Response
     {
+        // Maç silinmeden önce etkilenen takımları kaydet
+        $homeTeam = $match->homeTeam;
+        $awayTeam = $match->awayTeam;
+
         $match->delete();
+
+        // Maç silindikten sonra etkilenen takımların lig durumunu yeniden hesapla
+        $leagueService->updateTeamStanding($homeTeam);
+        $leagueService->updateTeamStanding($awayTeam);
+        $leagueService->updatePositions();
 
         return response()->noContent();
     }

@@ -35,7 +35,7 @@ describe('POST /api/champions-league/matches/play-week', function () {
         $response = $this->postJson('/api/champions-league/matches/play-week', ['week' => 1]);
 
         // Assert
-        $response->assertStatus(204);
+        $response->assertStatus(200);
 
         $matches = GameMatch::where('week', 1)->get();
         expect($matches)->toHaveCount(2);
@@ -84,7 +84,7 @@ describe('POST /api/champions-league/matches/play-week', function () {
         $response = $this->postJson('/api/champions-league/matches/play-week', ['week' => 1]);
 
         // Assert
-        $response->assertStatus(204);
+        $response->assertStatus(200);
 
         // Check standings are created and updated for all teams
         $standings = LeagueStanding::all();
@@ -106,7 +106,7 @@ describe('POST /api/champions-league/matches/play-week', function () {
         $response = $this->postJson('/api/champions-league/matches/play-week', ['week' => 5]);
 
         // Assert
-        $response->assertStatus(204);
+        $response->assertStatus(200);
     });
 });
 
@@ -136,7 +136,7 @@ describe('POST /api/champions-league/matches/play-all', function () {
         $response = $this->postJson('/api/champions-league/matches/play-all');
 
         // Assert
-        $response->assertStatus(204);
+        $response->assertStatus(200);
 
         $allMatches = GameMatch::all();
         expect($allMatches)->toHaveCount(3);
@@ -162,7 +162,7 @@ describe('POST /api/champions-league/matches/play-all', function () {
         $response = $this->postJson('/api/champions-league/matches/play-all');
 
         // Assert
-        $response->assertStatus(204);
+        $response->assertStatus(200);
 
         // Check standings are created for all teams
         $standings = LeagueStanding::all();
@@ -180,7 +180,7 @@ describe('POST /api/champions-league/matches/play-all', function () {
         $response = $this->postJson('/api/champions-league/matches/play-all');
 
         // Assert
-        $response->assertStatus(204);
+        $response->assertStatus(200);
     });
 
     test('skips already played matches', function () {
@@ -204,7 +204,7 @@ describe('POST /api/champions-league/matches/play-all', function () {
         $response = $this->postJson('/api/champions-league/matches/play-all');
 
         // Assert
-        $response->assertStatus(204);
+        $response->assertStatus(200);
 
         // Check only unplayed match was processed
         $playedMatch = GameMatch::where('week', 1)->first();
@@ -240,7 +240,7 @@ describe('POST /api/champions-league/matches/reset', function () {
         $response = $this->postJson('/api/champions-league/matches/reset');
 
         // Assert
-        $response->assertStatus(204);
+        $response->assertStatus(200);
 
         // Check matches are reset
         $match = GameMatch::first();
@@ -266,7 +266,7 @@ describe('POST /api/champions-league/matches/reset', function () {
         $response = $this->postJson('/api/champions-league/matches/reset');
 
         // Assert
-        $response->assertStatus(204);
+        $response->assertStatus(200);
     });
 
     test('resets multiple matches and standings', function () {
@@ -288,7 +288,7 @@ describe('POST /api/champions-league/matches/reset', function () {
         $response = $this->postJson('/api/champions-league/matches/reset');
 
         // Assert
-        $response->assertStatus(204);
+        $response->assertStatus(200);
 
         // Check all matches are reset
         $matches = GameMatch::all();

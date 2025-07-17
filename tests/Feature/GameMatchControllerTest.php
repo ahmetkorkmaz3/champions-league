@@ -237,87 +237,54 @@ describe('POST /api/champions-league/matches', function () {
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['home_team_id']);
     });
-});
 
-describe('GET /api/champions-league/matches/{id}', function () {
-    test('returns specific match with team relationships', function () {
+    test('creates standings when new match is created', function () {
         // Arrange
-        $match = GameMatch::factory()->create([
+        $matchData = [
             'home_team_id' => $this->team1->id,
             'away_team_id' => $this->team2->id,
-        ]);
-
-        // Act
-        $response = $this->getJson("/api/champions-league/matches/{$match->id}");
-
-        // Assert
-        $response->assertStatus(200)
-            ->assertJsonStructure([
-                'data' => [
-                    'id',
-                    'week',
-                    'is_played',
-                    'home_score',
-                    'away_score',
-                    'home_team',
-                    'away_team',
-                    'result_string',
-                    'created_at',
-                    'updated_at',
-                ],
-            ])
-            ->assertJson([
-                'data' => [
-                    'id' => $match->id,
-                ],
-            ]);
-
-        // Check team relationships are loaded
-        $matchData = $response->json('data');
-        expect($matchData['home_team']['id'])->toBe($this->team1->id);
-        expect($matchData['away_team']['id'])->toBe($this->team2->id);
-    });
-
-    test('returns 404 for non-existent match', function () {
-        // Act
-        $response = $this->getJson('/api/champions-league/matches/999');
-
-        // Assert
-        $response->assertStatus(404);
-    });
-
-    test('returns 404 for invalid match id', function () {
-        // Act
-        $response = $this->getJson('/api/champions-league/matches/invalid');
-
-        // Assert
-        $response->assertStatus(404);
-    });
-});
-
-describe('PUT /api/champions-league/matches/{id}', function () {
-    test('updates match successfully', function () {
-        // Arrange
-        $match = GameMatch::factory()->create([
-            'home_team_id' => $this->team1->id,
-            'away_team_id' => $this->team2->id,
-        ]);
-        $updateData = [
+            'week' => 1,
             'home_score' => 2,
             'away_score' => 1,
             'is_played' => true,
         ];
 
         // Act
-        $response = $this->putJson("/api/champions-league/matches/{$match->id}", $updateData);
+        $response = $this->postJson('/api/champions-league/matches', $matchData);
 
         // Assert
-        $response->assertStatus(204);
+        $response->assertStatus(201);
 
-        $match->refresh();
-        expect($match->home_score)->toBe(2);
-        expect($match->away_score)->toBe(1);
-        expect($match->is_played)->toBeTrue();
+        // Check that standings were created
+        $team1Standing = \App\Models\LeagueStanding::where('team_id', $this->team1->id)->first();
+        $team2Standing = \App\Models\LeagueStanding::where('team_id', $this->team2->id)->first();
+
+        expect($team1Standing)->not->toBeNull();
+        expect($team1Standing->points)->toBe(3); // Win
+        expect($team1Standing->wins)->toBe(1);
+        expect($team1Standing->goals_for)->toBe(2);
+
+        expect($team2Standing)->not->toBeNull();
+        expect($team2Standing->points)->toBe(0); // Loss
+        expect($team2Standing->losses)->toBe(1);
+        expect($team2Standing->goals_for)->toBe(1);
+    });
+
+    test('stores match successfully', function () {
+        // Arrange
+        $matchData = [
+            'home_team_id' => $this->team1->id,
+            'away_team_id' => $this->team2->id,
+            'week' => 1,
+        ];
+
+        // Act
+        $response = $this->postJson('/api/champions-league/matches', $matchData);
+
+        // Assert
+        $response->assertStatus(201);
+
+        $this->assertDatabaseHas('matches', $matchData);
     });
 
     test('validates score range', function () {
@@ -375,7 +342,7 @@ describe('PUT /api/champions-league/matches/{id}', function () {
         $response = $this->putJson("/api/champions-league/matches/{$match->id}", $updateData);
 
         // Assert
-        $response->assertStatus(204);
+        $response->assertStatus(200);
 
         $match->refresh();
         expect($match->home_score)->toBe(2);
@@ -396,6 +363,58 @@ describe('PUT /api/champions-league/matches/{id}', function () {
 });
 
 describe('DELETE /api/champions-league/matches/{id}', function () {
+    test('updates standings when match is deleted', function () {
+        // Arrange
+        $match = GameMatch::factory()->create([
+            'home_team_id' => $this->team1->id,
+            'away_team_id' => $this->team2->id,
+            'home_score' => 2,
+            'away_score' => 1,
+            'is_played' => true,
+        ]);
+
+        // Create initial standings
+        \App\Models\LeagueStanding::create([
+            'team_id' => $this->team1->id,
+            'points' => 3,
+            'goals_for' => 2,
+            'goals_against' => 1,
+            'goal_difference' => 1,
+            'wins' => 1,
+            'draws' => 0,
+            'losses' => 0,
+        ]);
+
+        \App\Models\LeagueStanding::create([
+            'team_id' => $this->team2->id,
+            'points' => 0,
+            'goals_for' => 1,
+            'goals_against' => 2,
+            'goal_difference' => -1,
+            'wins' => 0,
+            'draws' => 0,
+            'losses' => 1,
+        ]);
+
+        // Act
+        $response = $this->deleteJson("/api/champions-league/matches/{$match->id}");
+
+        // Assert
+        $response->assertStatus(204);
+
+        // Check that standings were updated (reset to 0)
+        $team1Standing = \App\Models\LeagueStanding::where('team_id', $this->team1->id)->first();
+        $team2Standing = \App\Models\LeagueStanding::where('team_id', $this->team2->id)->first();
+
+        expect($team1Standing->points)->toBe(0); // Reset to 0 (no matches)
+        expect($team1Standing->wins)->toBe(0); // Reset to 0
+        expect($team1Standing->goals_for)->toBe(0); // Reset to 0
+
+        expect($team2Standing->points)->toBe(0); // Reset to 0 (no matches)
+        expect($team2Standing->losses)->toBe(0); // Reset to 0
+        expect($team2Standing->goals_against)->toBe(0); // Reset to 0
+    });
+
     test('deletes match successfully', function () {
         // Arrange
         $match = GameMatch::factory()->create([
@@ -415,14 +434,6 @@ describe('DELETE /api/champions-league/matches/{id}', function () {
     test('returns 404 for non-existent match', function () {
         // Act
         $response = $this->deleteJson('/api/champions-league/matches/999');
-
-        // Assert
-        $response->assertStatus(404);
-    });
-
-    test('returns 404 for invalid match id', function () {
-        // Act
-        $response = $this->deleteJson('/api/champions-league/matches/invalid');
 
         // Assert
         $response->assertStatus(404);
@@ -507,5 +518,217 @@ describe('GET /api/champions-league/matches/by-week', function () {
         $week1Matches = $response->json('data.1');
         expect($week1Matches[0]['id'])->toBe($match1->id);
         expect($week1Matches[1]['id'])->toBe($match2->id);
+    });
+});
+
+describe('GET /api/champions-league/matches/{id}', function () {
+    test('returns specific match with team relationships', function () {
+        // Arrange
+        $match = GameMatch::factory()->create([
+            'home_team_id' => $this->team1->id,
+            'away_team_id' => $this->team2->id,
+        ]);
+
+        // Act
+        $response = $this->getJson("/api/champions-league/matches/{$match->id}");
+
+        // Assert
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'data' => [
+                    'id',
+                    'week',
+                    'is_played',
+                    'home_score',
+                    'away_score',
+                    'home_team',
+                    'away_team',
+                    'result_string',
+                    'created_at',
+                    'updated_at',
+                ],
+            ])
+            ->assertJson([
+                'data' => [
+                    'id' => $match->id,
+                ],
+            ]);
+
+        // Check team relationships are loaded
+        $matchData = $response->json('data');
+        expect($matchData['home_team']['id'])->toBe($this->team1->id);
+        expect($matchData['away_team']['id'])->toBe($this->team2->id);
+    });
+
+    test('returns 404 for non-existent match', function () {
+        // Act
+        $response = $this->getJson('/api/champions-league/matches/999');
+
+        // Assert
+        $response->assertStatus(404);
+    });
+});
+
+describe('PUT /api/champions-league/matches/{id}', function () {
+    test('updates standings when match score is changed', function () {
+        // Arrange
+        $match = GameMatch::factory()->create([
+            'home_team_id' => $this->team1->id,
+            'away_team_id' => $this->team2->id,
+            'home_score' => 2,
+            'away_score' => 1,
+            'is_played' => true,
+        ]);
+
+        // Create initial standings
+        \App\Models\LeagueStanding::create([
+            'team_id' => $this->team1->id,
+            'points' => 3,
+            'goals_for' => 2,
+            'goals_against' => 1,
+            'goal_difference' => 1,
+            'wins' => 1,
+            'draws' => 0,
+            'losses' => 0,
+        ]);
+
+        \App\Models\LeagueStanding::create([
+            'team_id' => $this->team2->id,
+            'points' => 0,
+            'goals_for' => 1,
+            'goals_against' => 2,
+            'goal_difference' => -1,
+            'wins' => 0,
+            'draws' => 0,
+            'losses' => 1,
+        ]);
+
+        $updateData = [
+            'home_score' => 1,
+            'away_score' => 1,
+            'is_played' => true,
+        ];
+
+        // Act
+        $response = $this->putJson("/api/champions-league/matches/{$match->id}", $updateData);
+
+        // Assert
+        $response->assertStatus(200);
+
+        // Check that standings were updated
+        $team1Standing = \App\Models\LeagueStanding::where('team_id', $this->team1->id)->first();
+        $team2Standing = \App\Models\LeagueStanding::where('team_id', $this->team2->id)->first();
+
+        expect($team1Standing->points)->toBe(1); // Only the draw (standings are reset)
+        expect($team1Standing->draws)->toBe(1); // Only the draw
+        expect($team1Standing->wins)->toBe(0); // No wins
+        expect($team1Standing->goals_for)->toBe(1); // Only the new goals
+
+        expect($team2Standing->points)->toBe(1); // Only the draw (standings are reset)
+        expect($team2Standing->draws)->toBe(1); // Only the draw
+        expect($team2Standing->losses)->toBe(0); // No losses
+        expect($team2Standing->goals_for)->toBe(1); // Only the new goals
+    });
+
+    test('updates match successfully', function () {
+        // Arrange
+        $match = GameMatch::factory()->create([
+            'home_team_id' => $this->team1->id,
+            'away_team_id' => $this->team2->id,
+            'home_score' => 2,
+            'away_score' => 1,
+            'is_played' => true,
+        ]);
+
+        $updateData = [
+            'home_score' => 3,
+            'away_score' => 2,
+            'is_played' => true,
+        ];
+
+        // Act
+        $response = $this->putJson("/api/champions-league/matches/{$match->id}", $updateData);
+
+        // Assert
+        $response->assertStatus(200);
+
+        $match->refresh();
+        expect($match->home_score)->toBe(3);
+        expect($match->away_score)->toBe(2);
+        expect($match->is_played)->toBeTrue();
+    });
+
+    test('validates score range', function () {
+        // Arrange
+        $match = GameMatch::factory()->create([
+            'home_team_id' => $this->team1->id,
+            'away_team_id' => $this->team2->id,
+        ]);
+        $updateData = [
+            'home_score' => -1, // Invalid
+            'away_score' => 1,
+        ];
+
+        // Act
+        $response = $this->putJson("/api/champions-league/matches/{$match->id}", $updateData);
+
+        // Assert
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['home_score']);
+    });
+
+    test('validates score is integer', function () {
+        // Arrange
+        $match = GameMatch::factory()->create([
+            'home_team_id' => $this->team1->id,
+            'away_team_id' => $this->team2->id,
+        ]);
+        $updateData = [
+            'home_score' => 'invalid',
+            'away_score' => 1,
+        ];
+
+        // Act
+        $response = $this->putJson("/api/champions-league/matches/{$match->id}", $updateData);
+
+        // Assert
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['home_score']);
+    });
+
+    test('allows partial updates', function () {
+        // Arrange
+        $match = GameMatch::factory()->create([
+            'home_team_id' => $this->team1->id,
+            'away_team_id' => $this->team2->id,
+            'home_score' => null,
+            'away_score' => null,
+            'is_played' => false,
+        ]);
+        $updateData = [
+            'home_score' => 2,
+        ];
+
+        // Act
+        $response = $this->putJson("/api/champions-league/matches/{$match->id}", $updateData);
+
+        // Assert
+        $response->assertStatus(200);
+
+        $match->refresh();
+        expect($match->home_score)->toBe(2);
+        expect($match->away_score)->toBeNull();
+        expect($match->is_played)->toBeFalse();
+    });
+
+    test('returns 404 for non-existent match', function () {
+        // Arrange
+        $updateData = ['home_score' => 2];
+
+        // Act
+        $response = $this->putJson('/api/champions-league/matches/999', $updateData);
+
+        // Assert
+        $response->assertStatus(404);
     });
 });

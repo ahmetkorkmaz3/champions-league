@@ -25,12 +25,7 @@ class ChampionsLeagueApiController extends Controller
      */
     public function resetMatches(): JsonResponse
     {
-        // Reset all matches
-        GameMatch::query()->update([
-            'home_score' => null,
-            'away_score' => null,
-            'is_played' => false,
-        ]);
+        $this->leagueService->regenerateMatches();
 
         // Clear standings
         LeagueStanding::query()->update([

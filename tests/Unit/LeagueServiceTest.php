@@ -32,6 +32,82 @@ beforeEach(function () {
     $this->leagueService = new LeagueService;
 });
 
+test('updateStandingsForMatch updates only affected teams', function () {
+    // Create a third team that won't be affected
+    $teamD = Team::factory()->create([
+        'name' => 'Team D',
+        'power_level' => 70,
+        'city' => 'City D',
+    ]);
+
+    // Create initial standings for all teams
+    LeagueStanding::create([
+        'team_id' => $this->teamA->id,
+        'points' => 3,
+        'goals_for' => 2,
+        'goals_against' => 1,
+        'goal_difference' => 1,
+        'wins' => 1,
+        'draws' => 0,
+        'losses' => 0,
+    ]);
+
+    LeagueStanding::create([
+        'team_id' => $this->teamB->id,
+        'points' => 0,
+        'goals_for' => 1,
+        'goals_against' => 2,
+        'goal_difference' => -1,
+        'wins' => 0,
+        'draws' => 0,
+        'losses' => 1,
+    ]);
+
+    LeagueStanding::create([
+        'team_id' => $teamD->id,
+        'points' => 6,
+        'goals_for' => 4,
+        'goals_against' => 0,
+        'goal_difference' => 4,
+        'wins' => 2,
+        'draws' => 0,
+        'losses' => 0,
+    ]);
+
+    // Create a match between team A and team B
+    $match = GameMatch::factory()->create([
+        'home_team_id' => $this->teamA->id,
+        'away_team_id' => $this->teamB->id,
+        'home_score' => 3,
+        'away_score' => 0,
+        'week' => 1,
+        'is_played' => true,
+    ]);
+
+    // Act
+    $this->leagueService->updateStandingsForMatch($match);
+
+    // Assert
+    $teamAStanding = LeagueStanding::where('team_id', $this->teamA->id)->first();
+    $teamBStanding = LeagueStanding::where('team_id', $this->teamB->id)->first();
+    $teamDStanding = LeagueStanding::where('team_id', $teamD->id)->first();
+
+    // Team A should have updated stats (only from the new match since standings are reset)
+    expect($teamAStanding->points)->toBe(3); // Only the new win
+    expect($teamAStanding->wins)->toBe(1); // Only the new win
+    expect($teamAStanding->goals_for)->toBe(3); // Only the new goals
+
+    // Team B should have updated stats (only from the new match since standings are reset)
+    expect($teamBStanding->points)->toBe(0); // Still 0
+    expect($teamBStanding->losses)->toBe(1); // Only the new loss
+    expect($teamBStanding->goals_against)->toBe(3); // Only the new goals against
+
+    // Team D should remain unchanged
+    expect($teamDStanding->points)->toBe(6);
+    expect($teamDStanding->wins)->toBe(2);
+    expect($teamDStanding->goals_for)->toBe(4);
+});
+
 test('updateTeamStanding calculates correct statistics for a team', function () {
     // Create played matches
     GameMatch::factory()->create([

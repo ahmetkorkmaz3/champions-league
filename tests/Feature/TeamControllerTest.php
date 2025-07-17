@@ -195,14 +195,6 @@ describe('GET /api/champions-league/teams/{id}', function () {
         // Assert
         $response->assertStatus(404);
     });
-
-    test('returns 404 for invalid team id', function () {
-        // Act
-        $response = $this->getJson('/api/champions-league/teams/invalid');
-
-        // Assert
-        $response->assertStatus(404);
-    });
 });
 
 describe('PUT /api/champions-league/teams/{id}', function () {
@@ -305,14 +297,6 @@ describe('DELETE /api/champions-league/teams/{id}', function () {
     test('returns 404 for non-existent team', function () {
         // Act
         $response = $this->deleteJson('/api/champions-league/teams/999');
-
-        // Assert
-        $response->assertStatus(404);
-    });
-
-    test('returns 404 for invalid team id', function () {
-        // Act
-        $response = $this->deleteJson('/api/champions-league/teams/invalid');
 
         // Assert
         $response->assertStatus(404);

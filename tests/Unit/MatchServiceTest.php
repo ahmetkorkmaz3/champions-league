@@ -179,7 +179,7 @@ test('playWeek plays all matches for specified week', function () {
 });
 
 test('playAllMatches plays all matches for all weeks', function () {
-    // Create matches for different weeks
+    // Create matches for different weeks (6 hafta için)
     GameMatch::factory()->create([
         'home_team_id' => $this->strongTeam->id,
         'away_team_id' => $this->weakTeam->id,
@@ -201,6 +201,27 @@ test('playAllMatches plays all matches for all weeks', function () {
         'is_played' => false,
     ]);
 
+    GameMatch::factory()->create([
+        'home_team_id' => $this->weakTeam->id,
+        'away_team_id' => $this->strongTeam->id,
+        'week' => 4,
+        'is_played' => false,
+    ]);
+
+    GameMatch::factory()->create([
+        'home_team_id' => $this->strongTeam->id,
+        'away_team_id' => $this->averageTeam->id,
+        'week' => 5,
+        'is_played' => false,
+    ]);
+
+    GameMatch::factory()->create([
+        'home_team_id' => $this->averageTeam->id,
+        'away_team_id' => $this->weakTeam->id,
+        'week' => 6,
+        'is_played' => false,
+    ]);
+
     // Act
     $allResults = $this->matchService->playAllMatches();
 
@@ -210,7 +231,7 @@ test('playAllMatches plays all matches for all weeks', function () {
 
     // Check that all matches were played
     $allMatches = GameMatch::all();
-    expect($allMatches)->toHaveCount(3);
+    expect($allMatches)->toHaveCount(6);
 
     foreach ($allMatches as $match) {
         expect($match->is_played)->toBeTrue();
@@ -220,11 +241,7 @@ test('playAllMatches plays all matches for all weeks', function () {
 
     // Check that results are organized by week
     foreach ($allResults as $week => $weekResults) {
-        if ($week <= 3) {
-            expect($weekResults)->toHaveCount(1); // 1 match per week
-        } else {
-            expect($weekResults)->toHaveCount(0); // No matches for weeks 4-6
-        }
+        expect($weekResults)->toHaveCount(1); // 1 match per week
     }
 });
 

@@ -45,8 +45,9 @@ class ChampionsLeagueSeeder extends Seeder
             Team::create($teamData);
         }
 
-        // Maçları oluştur (tek devreli lig - her takım bir kez karşılaşır)
+        // Maçları oluştur (çift devreli lig - her takım birbirleriyle 2 kez karşılaşır)
         $matches = [
+            // İlk devre (1-3. hafta)
             // 1. Hafta
             ['home_team_id' => 1, 'away_team_id' => 2, 'week' => 1],
             ['home_team_id' => 3, 'away_team_id' => 4, 'week' => 1],
@@ -58,12 +59,25 @@ class ChampionsLeagueSeeder extends Seeder
             // 3. Hafta
             ['home_team_id' => 1, 'away_team_id' => 3, 'week' => 3],
             ['home_team_id' => 2, 'away_team_id' => 4, 'week' => 3],
+
+            // İkinci devre (4-6. hafta) - rövanş maçları
+            // 4. Hafta
+            ['home_team_id' => 2, 'away_team_id' => 1, 'week' => 4],
+            ['home_team_id' => 4, 'away_team_id' => 3, 'week' => 4],
+
+            // 5. Hafta
+            ['home_team_id' => 3, 'away_team_id' => 2, 'week' => 5],
+            ['home_team_id' => 1, 'away_team_id' => 4, 'week' => 5],
+
+            // 6. Hafta
+            ['home_team_id' => 3, 'away_team_id' => 1, 'week' => 6],
+            ['home_team_id' => 4, 'away_team_id' => 2, 'week' => 6],
         ];
 
         foreach ($matches as $matchData) {
             GameMatch::create($matchData);
         }
 
-        $this->command->info('Champions League takımları ve maçları oluşturuldu!');
+        $this->command->info('Champions League takımları ve maçları oluşturuldu! (6 hafta, çift devreli lig)');
     }
 }

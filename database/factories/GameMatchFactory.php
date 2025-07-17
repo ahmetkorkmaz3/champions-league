@@ -22,7 +22,7 @@ class GameMatchFactory extends Factory
             'away_team_id' => Team::factory(),
             'home_score' => fake()->optional()->numberBetween(0, 5),
             'away_score' => fake()->optional()->numberBetween(0, 5),
-            'week' => fake()->numberBetween(1, 10),
+            'week' => fake()->numberBetween(1, 6),
             'is_played' => fake()->boolean(),
         ];
     }

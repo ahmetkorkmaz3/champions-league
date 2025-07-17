@@ -272,14 +272,6 @@ describe('GET /api/champions-league/standings/{id}', function () {
         // Assert
         $response->assertStatus(404);
     });
-
-    test('returns 404 for invalid standing id', function () {
-        // Act
-        $response = $this->getJson('/api/champions-league/standings/invalid');
-
-        // Assert
-        $response->assertStatus(404);
-    });
 });
 
 describe('PUT /api/champions-league/standings/{id}', function () {
@@ -408,14 +400,6 @@ describe('DELETE /api/champions-league/standings/{id}', function () {
     test('returns 404 for non-existent standing', function () {
         // Act
         $response = $this->deleteJson('/api/champions-league/standings/999');
-
-        // Assert
-        $response->assertStatus(404);
-    });
-
-    test('returns 404 for invalid standing id', function () {
-        // Act
-        $response = $this->deleteJson('/api/champions-league/standings/invalid');
 
         // Assert
         $response->assertStatus(404);

@@ -93,7 +93,10 @@ class MatchService
     {
         $allResults = [];
 
-        for ($week = 1; $week <= 6; $week++) {
+        // Veritabanındaki maksimum hafta sayısını al
+        $maxWeek = GameMatch::max('week') ?? 6;
+
+        for ($week = 1; $week <= $maxWeek; $week++) {
             $weekResults = $this->playWeek($week);
             $allResults[$week] = $weekResults;
         }
