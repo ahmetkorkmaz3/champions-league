@@ -7,7 +7,6 @@ use App\Http\Requests\Api\PlayWeekRequest;
 use App\Http\Resources\GameMatchResource;
 use App\Http\Resources\LeagueStandingResource;
 use App\Models\GameMatch;
-use App\Models\LeagueStanding;
 use App\Services\LeagueService;
 use Illuminate\Http\JsonResponse;
 
@@ -25,37 +24,21 @@ class ChampionsLeagueApiController extends Controller
      */
     public function resetMatches(): JsonResponse
     {
-        $this->leagueService->regenerateMatches();
+        $this->leagueService->resetMatches();
 
-        // Clear standings
-        LeagueStanding::query()->update([
-            'points' => 0,
-            'goals_for' => 0,
-            'goals_against' => 0,
-            'goal_difference' => 0,
-            'wins' => 0,
-            'draws' => 0,
-            'losses' => 0,
-            'position' => 0,
-        ]);
-
-        // Return updated data
         $matches = GameMatch::with(['homeTeam', 'awayTeam'])
             ->orderBy('week')
             ->orderBy('id')
             ->get();
 
-        $matchesByWeek = $matches->groupBy('week')->map(function ($weekMatches) {
-            return GameMatchResource::collection($weekMatches);
-        });
-
-        $standings = LeagueStanding::with('team')
-            ->orderBy('position')
-            ->get();
+        $matchesByWeek = $this->leagueService->getAllMatchesGroupedByWeek();
+        $standings = $this->leagueService->getCurrentStandings();
 
         return response()->json([
             'matches' => GameMatchResource::collection($matches),
-            'matchesByWeek' => $matchesByWeek,
+            'matchesByWeek' => $matchesByWeek->map(function ($weekMatches) {
+                return GameMatchResource::collection($weekMatches);
+            }),
             'standings' => LeagueStandingResource::collection($standings),
         ]);
     }
@@ -67,23 +50,19 @@ class ChampionsLeagueApiController extends Controller
     {
         $this->leagueService->playAllMatches();
 
-        // Return updated data
         $matches = GameMatch::with(['homeTeam', 'awayTeam'])
             ->orderBy('week')
             ->orderBy('id')
             ->get();
 
-        $matchesByWeek = $matches->groupBy('week')->map(function ($weekMatches) {
-            return GameMatchResource::collection($weekMatches);
-        });
-
-        $standings = LeagueStanding::with('team')
-            ->orderBy('position', 'asc')
-            ->get();
+        $matchesByWeek = $this->leagueService->getAllMatchesGroupedByWeek();
+        $standings = $this->leagueService->getCurrentStandings();
 
         return response()->json([
             'matches' => GameMatchResource::collection($matches),
-            'matchesByWeek' => $matchesByWeek,
+            'matchesByWeek' => $matchesByWeek->map(function ($weekMatches) {
+                return GameMatchResource::collection($weekMatches);
+            }),
             'standings' => LeagueStandingResource::collection($standings),
         ]);
     }
@@ -96,23 +75,19 @@ class ChampionsLeagueApiController extends Controller
         $week = $request->validated('week');
         $this->leagueService->playWeek($week);
 
-        // Return updated data
         $matches = GameMatch::with(['homeTeam', 'awayTeam'])
             ->orderBy('week')
             ->orderBy('id')
             ->get();
 
-        $matchesByWeek = $matches->groupBy('week')->map(function ($weekMatches) {
-            return GameMatchResource::collection($weekMatches);
-        });
-
-        $standings = LeagueStanding::with('team')
-            ->orderBy('position', 'asc')
-            ->get();
+        $matchesByWeek = $this->leagueService->getAllMatchesGroupedByWeek();
+        $standings = $this->leagueService->getCurrentStandings();
 
         return response()->json([
             'matches' => GameMatchResource::collection($matches),
-            'matchesByWeek' => $matchesByWeek,
+            'matchesByWeek' => $matchesByWeek->map(function ($weekMatches) {
+                return GameMatchResource::collection($weekMatches);
+            }),
             'standings' => LeagueStandingResource::collection($standings),
         ]);
     }

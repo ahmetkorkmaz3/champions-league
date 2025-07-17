@@ -38,34 +38,10 @@ class Team extends Model
     }
 
     /**
-     * Takımın tüm maçları
-     */
-    public function matches()
-    {
-        return $this->homeMatches->merge($this->awayMatches);
-    }
-
-    /**
      * Takımın lig durumu
      */
     public function standing()
     {
         return $this->hasOne(LeagueStanding::class);
-    }
-
-    /**
-     * Takımın güç seviyesine göre gol atma olasılığı
-     */
-    public function getGoalScoringProbability(): float
-    {
-        return $this->power_level / 100.0;
-    }
-
-    /**
-     * Takımın güç seviyesine göre gol yeme olasılığı
-     */
-    public function getGoalConcedingProbability(): float
-    {
-        return (100 - $this->power_level) / 100.0;
     }
 }

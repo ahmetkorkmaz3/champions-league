@@ -10,19 +10,6 @@ use Illuminate\Support\Collection;
 class LeagueService
 {
     /**
-     * Belirli bir maçın etkilediği takımların lig durumunu güncelle
-     */
-    public function updateStandingsForMatch(GameMatch $match): void
-    {
-        // Maçın etkilediği takımları güncelle
-        $this->updateTeamStanding($match->homeTeam);
-        $this->updateTeamStanding($match->awayTeam);
-
-        // Sıralamaları güncelle
-        $this->updatePositions();
-    }
-
-    /**
      * Lig tablosunu güncelle
      */
     public function updateStandings(): void
@@ -37,24 +24,41 @@ class LeagueService
     }
 
     /**
+     * Belirli bir maçın etkilediği takımların lig durumunu güncelle
+     */
+    public function updateStandingsForMatch(GameMatch $match): void
+    {
+        $this->updateTeamStanding($match->homeTeam);
+        $this->updateTeamStanding($match->awayTeam);
+        $this->updatePositions();
+    }
+
+    /**
      * Belirli bir takımın lig durumunu güncelle
      */
     public function updateTeamStanding(Team $team): void
     {
-        // Önce takımın lig durumunu sıfırla
+        $stats = $this->calculateTeamStats($team);
+
         LeagueStanding::updateOrCreate(
             ['team_id' => $team->id],
             [
-                'points' => 0,
-                'goals_for' => 0,
-                'goals_against' => 0,
-                'goal_difference' => 0,
-                'wins' => 0,
-                'draws' => 0,
-                'losses' => 0,
+                'points' => $stats['points'],
+                'goals_for' => $stats['goals_for'],
+                'goals_against' => $stats['goals_against'],
+                'goal_difference' => $stats['goal_difference'],
+                'wins' => $stats['wins'],
+                'draws' => $stats['draws'],
+                'losses' => $stats['losses'],
             ]
         );
+    }
 
+    /**
+     * Takım istatistiklerini hesapla
+     */
+    private function calculateTeamStats(Team $team): array
+    {
         $homeMatches = $team->homeMatches()->where('is_played', true)->get();
         $awayMatches = $team->awayMatches()->where('is_played', true)->get();
 
@@ -66,6 +70,9 @@ class LeagueService
 
         // Ev sahibi maçları
         foreach ($homeMatches as $match) {
+            $goalsFor += $match->home_score;
+            $goalsAgainst += $match->away_score;
+
             if ($match->home_score > $match->away_score) {
                 $wins++;
             } elseif ($match->home_score === $match->away_score) {
@@ -73,13 +80,13 @@ class LeagueService
             } else {
                 $losses++;
             }
-
-            $goalsFor += $match->home_score;
-            $goalsAgainst += $match->away_score;
         }
 
         // Deplasman maçları
         foreach ($awayMatches as $match) {
+            $goalsFor += $match->away_score;
+            $goalsAgainst += $match->home_score;
+
             if ($match->away_score > $match->home_score) {
                 $wins++;
             } elseif ($match->away_score === $match->home_score) {
@@ -87,24 +94,17 @@ class LeagueService
             } else {
                 $losses++;
             }
-
-            $goalsFor += $match->away_score;
-            $goalsAgainst += $match->home_score;
         }
 
-        $points = ($wins * 3) + $draws;
-        $goalDifference = $goalsFor - $goalsAgainst;
-
-        // Lig durumunu güncelle
-        LeagueStanding::where('team_id', $team->id)->update([
-            'points' => $points,
+        return [
+            'points' => ($wins * 3) + $draws,
             'goals_for' => $goalsFor,
             'goals_against' => $goalsAgainst,
-            'goal_difference' => $goalDifference,
+            'goal_difference' => $goalsFor - $goalsAgainst,
             'wins' => $wins,
             'draws' => $draws,
             'losses' => $losses,
-        ]);
+        ];
     }
 
     /**
@@ -139,24 +139,45 @@ class LeagueService
      */
     public function getPredictedStandings(int $afterWeek = 3): array
     {
-        // O haftaya kadar oynanan maçları al
         $playedMatches = GameMatch::where('week', '<=', $afterWeek)
             ->where('is_played', true)
             ->with(['homeTeam', 'awayTeam'])
             ->get();
 
-        // Kalan maçları simüle et
         $remainingMatches = GameMatch::where('week', '>', $afterWeek)
             ->where('is_played', false)
             ->with(['homeTeam', 'awayTeam'])
             ->get();
 
-        // Geçici takım durumları oluştur
-        $tempStandings = [];
+        $tempStandings = $this->initializeTempStandings();
+
+        // Oynanan maçları hesapla
+        foreach ($playedMatches as $match) {
+            $this->addMatchToStandings($tempStandings, $match);
+        }
+
+        // Kalan maçları simüle et
+        $matchService = new MatchService;
+        foreach ($remainingMatches as $match) {
+            $result = $matchService->simulateMatch($match);
+            $match->home_score = $result['home_score'];
+            $match->away_score = $result['away_score'];
+            $this->addMatchToStandings($tempStandings, $match);
+        }
+
+        return $this->sortAndFormatStandings($tempStandings);
+    }
+
+    /**
+     * Geçici tablo başlat
+     */
+    private function initializeTempStandings(): array
+    {
+        $standings = [];
         $teams = Team::all();
 
         foreach ($teams as $team) {
-            $tempStandings[$team->id] = [
+            $standings[$team->id] = [
                 'team' => $team,
                 'points' => 0,
                 'goals_for' => 0,
@@ -167,26 +188,44 @@ class LeagueService
             ];
         }
 
-        // Oynanan maçları hesapla
-        foreach ($playedMatches as $match) {
-            $this->addMatchToStandings($tempStandings, $match);
+        return $standings;
+    }
+
+    /**
+     * Maç sonucunu geçici tabloya ekle
+     */
+    private function addMatchToStandings(array &$standings, GameMatch $match): void
+    {
+        $homeId = $match->home_team_id;
+        $awayId = $match->away_team_id;
+
+        $standings[$homeId]['goals_for'] += $match->home_score;
+        $standings[$homeId]['goals_against'] += $match->away_score;
+        $standings[$awayId]['goals_for'] += $match->away_score;
+        $standings[$awayId]['goals_against'] += $match->home_score;
+
+        if ($match->home_score > $match->away_score) {
+            $standings[$homeId]['wins']++;
+            $standings[$homeId]['points'] += 3;
+            $standings[$awayId]['losses']++;
+        } elseif ($match->away_score > $match->home_score) {
+            $standings[$awayId]['wins']++;
+            $standings[$awayId]['points'] += 3;
+            $standings[$homeId]['losses']++;
+        } else {
+            $standings[$homeId]['draws']++;
+            $standings[$homeId]['points'] += 1;
+            $standings[$awayId]['draws']++;
+            $standings[$awayId]['points'] += 1;
         }
+    }
 
-        // Kalan maçları simüle et
-        $matchService = new MatchService;
-        foreach ($remainingMatches as $match) {
-            $simulatedResult = $matchService->simulateMatch($match);
-
-            // Simüle edilmiş sonucu geçici maç objesine ekle
-            $match->home_score = $simulatedResult['home_score'];
-            $match->away_score = $simulatedResult['away_score'];
-            $match->is_played = true;
-
-            $this->addMatchToStandings($tempStandings, $match);
-        }
-
-        // Sıralama yap
-        $sortedStandings = collect($tempStandings)->sortByDesc(function ($standing) {
+    /**
+     * Tabloyu sırala ve formatla
+     */
+    private function sortAndFormatStandings(array $standings): array
+    {
+        $sorted = collect($standings)->sortByDesc(function ($standing) {
             return [
                 $standing['points'],
                 $standing['goals_for'] - $standing['goals_against'],
@@ -195,7 +234,7 @@ class LeagueService
             ];
         })->values();
 
-        return $sortedStandings->map(function ($standing, $index) {
+        return $sorted->map(function ($standing, $index) {
             return [
                 'position' => $index + 1,
                 'team' => $standing['team'],
@@ -212,147 +251,100 @@ class LeagueService
     }
 
     /**
-     * Maç sonucunu geçici tabloya ekle
-     */
-    private function addMatchToStandings(array &$standings, GameMatch $match): void
-    {
-        $homeTeamId = $match->home_team_id;
-        $awayTeamId = $match->away_team_id;
-
-        // Ev sahibi takım
-        $standings[$homeTeamId]['goals_for'] += $match->home_score;
-        $standings[$homeTeamId]['goals_against'] += $match->away_score;
-
-        // Deplasman takımı
-        $standings[$awayTeamId]['goals_for'] += $match->away_score;
-        $standings[$awayTeamId]['goals_against'] += $match->home_score;
-
-        if ($match->home_score > $match->away_score) {
-            // Ev sahibi kazandı
-            $standings[$homeTeamId]['wins']++;
-            $standings[$homeTeamId]['points'] += 3;
-            $standings[$awayTeamId]['losses']++;
-        } elseif ($match->away_score > $match->home_score) {
-            // Deplasman kazandı
-            $standings[$awayTeamId]['wins']++;
-            $standings[$awayTeamId]['points'] += 3;
-            $standings[$homeTeamId]['losses']++;
-        } else {
-            // Beraberlik
-            $standings[$homeTeamId]['draws']++;
-            $standings[$homeTeamId]['points'] += 1;
-            $standings[$awayTeamId]['draws']++;
-            $standings[$awayTeamId]['points'] += 1;
-        }
-    }
-
-    /**
-     * Play all matches
+     * Tüm maçları oynat
      */
     public function playAllMatches(): void
     {
-        $unplayedMatches = GameMatch::where('is_played', false)->get();
-        $matchService = new \App\Services\MatchService;
+        $matchService = new MatchService;
+        $maxWeek = GameMatch::max('week') ?? 6;
 
-        foreach ($unplayedMatches as $match) {
-            $result = $matchService->simulateMatch($match);
-            $match->update([
-                'home_score' => $result['home_score'],
-                'away_score' => $result['away_score'],
-                'is_played' => true,
-            ]);
+        for ($week = 1; $week <= $maxWeek; $week++) {
+            $matchService->playWeek($week);
         }
 
         $this->updateStandings();
     }
 
     /**
-     * Play matches for a specific week
+     * Belirli bir haftayı oynat
      */
     public function playWeek(int $week): void
     {
-        $weekMatches = GameMatch::where('week', $week)
-            ->where('is_played', false)
-            ->get();
-
-        $matchService = new \App\Services\MatchService;
-
-        foreach ($weekMatches as $match) {
-            $result = $matchService->simulateMatch($match);
-            $match->update([
-                'home_score' => $result['home_score'],
-                'away_score' => $result['away_score'],
-                'is_played' => true,
-            ]);
-        }
-
+        $matchService = new MatchService;
+        $matchService->playWeek($week);
         $this->updateStandings();
     }
 
+    /**
+     * Maçları yeniden oluştur
+     */
     public function regenerateMatches(): void
     {
-        // Delete all existing matches
-        GameMatch::query()->delete();
+        GameMatch::truncate();
 
-        // Get all teams
         $teams = Team::all();
-        $teamIds = $teams->pluck('id')->toArray();
+        $week = 1;
 
-        // Create double round-robin tournament (çift devreli lig)
-        $matches = [];
+        for ($i = 0; $i < count($teams); $i++) {
+            for ($j = $i + 1; $j < count($teams); $j++) {
+                GameMatch::create([
+                    'home_team_id' => $teams[$i]->id,
+                    'away_team_id' => $teams[$j]->id,
+                    'week' => $week,
+                    'is_played' => false,
+                ]);
 
-        // If odd number of teams, add a "bye" team (null)
-        if (count($teamIds) % 2 != 0) {
-            $teamIds[] = null;
-        }
-
-        $numTeams = count($teamIds);
-        $numWeeks = ($numTeams - 1) * 2; // Çift devreli lig için 2 katı
-        $halfSize = $numTeams / 2;
-
-        // Create a copy of team IDs for rotation
-        $rotatingTeams = $teamIds;
-
-        // Generate double round-robin schedule using circle method
-        for ($week = 1; $week <= $numWeeks; $week++) {
-            $weekMatches = [];
-
-            for ($i = 0; $i < $halfSize; $i++) {
-                $team1 = $rotatingTeams[$i];
-                $team2 = $rotatingTeams[$numTeams - 1 - $i];
-
-                // Skip if one of the teams is null (bye)
-                if ($team1 !== null && $team2 !== null) {
-                    // İkinci devrede ev sahibi/deplasman rollerini değiştir
-                    if ($week > ($numWeeks / 2)) {
-                        $temp = $team1;
-                        $team1 = $team2;
-                        $team2 = $temp;
-                    }
-
-                    $weekMatches[] = [
-                        'home_team_id' => $team1,
-                        'away_team_id' => $team2,
-                        'week' => $week,
-                        'home_score' => null,
-                        'away_score' => null,
-                        'is_played' => false,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ];
+                if ($week < 6) {
+                    $week++;
+                } else {
+                    $week = 1;
                 }
             }
-
-            $matches = array_merge($matches, $weekMatches);
-
-            // Rotate teams for next week (keep first team fixed, rotate others)
-            if ($week < $numWeeks) {
-                $lastTeam = array_pop($rotatingTeams);
-                array_splice($rotatingTeams, 1, 0, $lastTeam);
-            }
         }
+    }
 
-        // Insert all matches
-        GameMatch::insert($matches);
+    /**
+     * Maçları sıfırla ve lig tablosunu temizle
+     */
+    public function resetMatches(): void
+    {
+        $this->regenerateMatches();
+
+        LeagueStanding::query()->update([
+            'points' => 0,
+            'goals_for' => 0,
+            'goals_against' => 0,
+            'goal_difference' => 0,
+            'wins' => 0,
+            'draws' => 0,
+            'losses' => 0,
+            'position' => 0,
+        ]);
+    }
+
+    /**
+     * Tüm maçları getir (haftalara göre gruplandırılmış)
+     */
+    public function getAllMatchesGroupedByWeek(): \Illuminate\Support\Collection
+    {
+        $matches = GameMatch::with(['homeTeam', 'awayTeam'])
+            ->orderBy('week')
+            ->orderBy('id')
+            ->get();
+
+        return $matches->groupBy('week');
+    }
+
+    /**
+     * Maç silindikten sonra etkilenen takımları güncelle
+     */
+    public function handleMatchDeletion(GameMatch $match): void
+    {
+        $homeTeam = $match->homeTeam;
+        $awayTeam = $match->awayTeam;
+
+        $this->updateTeamStanding($homeTeam);
+        $this->updateTeamStanding($awayTeam);
+        $this->updatePositions();
     }
 }

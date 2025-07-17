@@ -14,17 +14,13 @@ class MatchService
         $homeTeam = $match->homeTeam;
         $awayTeam = $match->awayTeam;
 
-        // Ev sahibi avantajı (+10% güç)
-        $homeTeamPower = $homeTeam->power_level * 1.1;
-        $awayTeamPower = $awayTeam->power_level;
+        // Ev sahibi avantajı (%10)
+        $homePower = $homeTeam->power_level * 1.1;
+        $awayPower = $awayTeam->power_level;
 
-        // Gol atma olasılıkları
-        $homeScoringProb = $homeTeamPower / 100;
-        $awayScoringProb = $awayTeamPower / 100;
-
-        // Maç süresi boyunca gol atma şansları (90 dakika)
-        $homeGoals = $this->calculateGoals($homeScoringProb, $awayTeam->getGoalConcedingProbability());
-        $awayGoals = $this->calculateGoals($awayScoringProb, $homeTeam->getGoalConcedingProbability());
+        // Gol hesaplama
+        $homeGoals = $this->calculateGoals($homePower, $awayPower);
+        $awayGoals = $this->calculateGoals($awayPower, $homePower);
 
         return [
             'home_score' => $homeGoals,
@@ -35,21 +31,27 @@ class MatchService
     /**
      * Gol sayısını hesapla
      */
-    private function calculateGoals(float $scoringProb, float $opponentConcedingProb): int
+    private function calculateGoals(float $attackerPower, float $defenderPower): int
     {
-        $totalProb = ($scoringProb + $opponentConcedingProb) / 2;
+        // Daha gerçekçi olasılık hesaplama
+        $powerDifference = $attackerPower - $defenderPower;
+        $baseChance = 0.12; // %12 temel gol atma şansı
+        $powerBonus = ($powerDifference / 100) * 0.15; // Güç farkına göre daha büyük bonus
+        $scoringChance = $baseChance + $powerBonus;
 
-        // Poisson dağılımı kullanarak daha gerçekçi gol sayıları
-        $expectedGoals = $totalProb * 2.5; // Ortalama 2.5 gol per maç
+        // Sınırları belirle
+        $scoringChance = max(0.05, min(0.30, $scoringChance)); // %5-%30 arası
 
         $goals = 0;
-        for ($i = 0; $i < 10; $i++) { // 10 fırsat
-            if (random_int(1, 100) <= ($expectedGoals * 10)) {
+        $attempts = 7; // Maç başına ortalama 7 fırsat
+
+        for ($i = 0; $i < $attempts; $i++) {
+            if (random_int(1, 100) <= ($scoringChance * 100)) {
                 $goals++;
             }
         }
 
-        return min($goals, 5); // Maksimum 5 gol
+        return min($goals, 4); // Maksimum 4 gol
     }
 
     /**
@@ -92,13 +94,10 @@ class MatchService
     public function playAllMatches(): array
     {
         $allResults = [];
-
-        // Veritabanındaki maksimum hafta sayısını al
         $maxWeek = GameMatch::max('week') ?? 6;
 
         for ($week = 1; $week <= $maxWeek; $week++) {
-            $weekResults = $this->playWeek($week);
-            $allResults[$week] = $weekResults;
+            $allResults[$week] = $this->playWeek($week);
         }
 
         return $allResults;

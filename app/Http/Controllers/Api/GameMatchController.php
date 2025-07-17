@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\StoreGameMatchRequest;
 use App\Http\Requests\Api\UpdateGameMatchRequest;
 use App\Http\Resources\GameMatchResource;
+use App\Http\Resources\LeagueStandingResource;
 use App\Models\GameMatch;
 use App\Services\LeagueService;
 use Illuminate\Http\JsonResponse;
@@ -15,6 +16,13 @@ use Illuminate\Http\Response;
 
 class GameMatchController extends Controller
 {
+    protected LeagueService $leagueService;
+
+    public function __construct(LeagueService $leagueService)
+    {
+        $this->leagueService = $leagueService;
+    }
+
     /**
      * Display a listing of matches
      */
@@ -37,11 +45,10 @@ class GameMatchController extends Controller
     /**
      * Store a newly created match
      */
-    public function store(StoreGameMatchRequest $request, LeagueService $leagueService): Response
+    public function store(StoreGameMatchRequest $request): Response
     {
         $match = GameMatch::create($request->validated());
-
-        $leagueService->updateStandingsForMatch($match);
+        $this->leagueService->updateStandingsForMatch($match);
 
         return response()->noContent(201);
     }
@@ -59,48 +66,35 @@ class GameMatchController extends Controller
     /**
      * Update the specified match
      */
-    public function update(UpdateGameMatchRequest $request, GameMatch $match, LeagueService $leagueService): JsonResponse
+    public function update(UpdateGameMatchRequest $request, GameMatch $match): JsonResponse
     {
         $match->update($request->validated());
+        $this->leagueService->updateStandingsForMatch($match->fresh());
 
-        $leagueService->updateStandingsForMatch($match->fresh());
-
-        // Return updated data
         $matches = GameMatch::with(['homeTeam', 'awayTeam'])
             ->orderBy('week')
             ->orderBy('id')
             ->get();
 
-        $matchesByWeek = $matches->groupBy('week')->map(function ($weekMatches) {
-            return GameMatchResource::collection($weekMatches);
-        });
-
-        $standings = \App\Models\LeagueStanding::with('team')
-            ->orderBy('position', 'asc')
-            ->get();
+        $matchesByWeek = $this->leagueService->getAllMatchesGroupedByWeek();
+        $standings = $this->leagueService->getCurrentStandings();
 
         return response()->json([
             'matches' => GameMatchResource::collection($matches),
-            'matchesByWeek' => $matchesByWeek,
-            'standings' => \App\Http\Resources\LeagueStandingResource::collection($standings),
+            'matchesByWeek' => $matchesByWeek->map(function ($weekMatches) {
+                return GameMatchResource::collection($weekMatches);
+            }),
+            'standings' => LeagueStandingResource::collection($standings),
         ]);
     }
 
     /**
      * Remove the specified match
      */
-    public function destroy(GameMatch $match, LeagueService $leagueService): Response
+    public function destroy(GameMatch $match): Response
     {
-        // Maç silinmeden önce etkilenen takımları kaydet
-        $homeTeam = $match->homeTeam;
-        $awayTeam = $match->awayTeam;
-
         $match->delete();
-
-        // Maç silindikten sonra etkilenen takımların lig durumunu yeniden hesapla
-        $leagueService->updateTeamStanding($homeTeam);
-        $leagueService->updateTeamStanding($awayTeam);
-        $leagueService->updatePositions();
+        $this->leagueService->handleMatchDeletion($match);
 
         return response()->noContent();
     }
@@ -110,17 +104,12 @@ class GameMatchController extends Controller
      */
     public function byWeek(): JsonResponse
     {
-        $matches = GameMatch::with(['homeTeam', 'awayTeam'])
-            ->orderBy('week')
-            ->orderBy('id')
-            ->get();
-
-        $matchesByWeek = $matches->groupBy('week')->map(function ($weekMatches) {
-            return GameMatchResource::collection($weekMatches);
-        });
+        $matchesByWeek = $this->leagueService->getAllMatchesGroupedByWeek();
 
         return response()->json([
-            'data' => $matchesByWeek,
+            'data' => $matchesByWeek->map(function ($weekMatches) {
+                return GameMatchResource::collection($weekMatches);
+            }),
         ]);
     }
 }

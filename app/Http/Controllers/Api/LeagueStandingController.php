@@ -7,19 +7,25 @@ use App\Http\Requests\Api\StoreLeagueStandingRequest;
 use App\Http\Requests\Api\UpdateLeagueStandingRequest;
 use App\Http\Resources\LeagueStandingResource;
 use App\Models\LeagueStanding;
+use App\Services\LeagueService;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 
 class LeagueStandingController extends Controller
 {
+    protected LeagueService $leagueService;
+
+    public function __construct(LeagueService $leagueService)
+    {
+        $this->leagueService = $leagueService;
+    }
+
     /**
      * Display a listing of standings
      */
     public function index(): AnonymousResourceCollection
     {
-        $standings = LeagueStanding::with('team')
-            ->orderBy('position', 'asc')
-            ->get();
+        $standings = $this->leagueService->getCurrentStandings();
 
         return LeagueStandingResource::collection($standings);
     }
