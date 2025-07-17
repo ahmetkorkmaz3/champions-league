@@ -35,8 +35,8 @@
             </h3>
             <div class="mt-2 text-sm text-blue-700">
               <p>
-                Bu tahmin, {{ currentWeek }}. haftaya kadar oynanan maçların gerçek sonuçları ile 
-                kalan maçların simüle edilmiş sonuçları birleştirilerek hesaplanmıştır. 
+                Bu tahmin, {{ currentWeek }}. haftaya kadar oynanan maçların gerçek sonuçları ile
+                kalan maçların simüle edilmiş sonuçları birleştirilerek hesaplanmıştır.
                 Takımların güç seviyeleri ve ev sahibi avantajları dikkate alınmıştır.
               </p>
             </div>
@@ -149,8 +149,8 @@
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-900">
                   <div class="flex items-center justify-center">
                     <div class="w-16 bg-gray-200 rounded-full h-2">
-                      <div 
-                        class="bg-blue-600 h-2 rounded-full" 
+                      <div
+                        class="bg-blue-600 h-2 rounded-full"
                         :style="{ width: (standing.team.power_level / 100) * 100 + '%' }"
                       ></div>
                     </div>
@@ -196,8 +196,8 @@
               <span class="text-sm text-gray-600">{{ standing.team.name }}:</span>
               <div class="flex items-center">
                 <div class="w-12 bg-gray-200 rounded-full h-2 mr-2">
-                  <div 
-                    class="bg-green-600 h-2 rounded-full" 
+                  <div
+                    class="bg-green-600 h-2 rounded-full"
                     :style="{ width: getChampionshipProbability(index) + '%' }"
                   ></div>
                 </div>
@@ -229,7 +229,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 const props = defineProps({
   currentWeek: Number,
   predictedStandings: Array,
@@ -237,7 +237,7 @@ const props = defineProps({
 
 const getTopScorer = () => {
   if (!props.predictedStandings?.length) return '-'
-  const topScorer = props.predictedStandings.reduce((prev, current) => 
+  const topScorer = props.predictedStandings.reduce((prev, current) =>
     prev.goals_for > current.goals_for ? prev : current
   )
   return `${topScorer.team.name} (${topScorer.goals_for})`
@@ -245,7 +245,7 @@ const getTopScorer = () => {
 
 const getBestDefense = () => {
   if (!props.predictedStandings?.length) return '-'
-  const bestDefense = props.predictedStandings.reduce((prev, current) => 
+  const bestDefense = props.predictedStandings.reduce((prev, current) =>
     prev.goals_against < current.goals_against ? prev : current
   )
   return `${bestDefense.team.name} (${bestDefense.goals_against})`
@@ -253,7 +253,7 @@ const getBestDefense = () => {
 
 const getHighestPoints = () => {
   if (!props.predictedStandings?.length) return '-'
-  const highestPoints = props.predictedStandings.reduce((prev, current) => 
+  const highestPoints = props.predictedStandings.reduce((prev, current) =>
     prev.points > current.points ? prev : current
   )
   return `${highestPoints.team.name} (${highestPoints.points})`
@@ -263,4 +263,4 @@ const getChampionshipProbability = (position) => {
   const probabilities = [60, 25, 15] // İlk 3 takımın şampiyonluk olasılıkları
   return probabilities[position] || 0
 }
-</script> 
+</script>
