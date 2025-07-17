@@ -28,8 +28,8 @@ Route::prefix('champions-league')->name('api.champions-league.')->group(function
     Route::apiResource('teams', TeamController::class);
 
     // Matches - Full CRUD + Custom endpoints
-    Route::apiResource('matches', GameMatchController::class);
     Route::get('/matches/by-week', [GameMatchController::class, 'byWeek'])->name('matches.by-week');
+    Route::apiResource('matches', GameMatchController::class);
 
     // Standings - Full CRUD
     Route::apiResource('standings', LeagueStandingController::class);
