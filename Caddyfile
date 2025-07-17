@@ -1,3 +1,33 @@
 champions.ahmetkorkmaz.co {
-    reverse_proxy app:8000
+    root * /var/www/html/public
+    encode gzip
+    
+    # Handle PHP files
+    php_fastcgi app:9000
+    
+    # Handle Laravel routes
+    try_files {path} {path}/ /index.php?{query}
+    
+    # File server for static files
+    file_server
+    
+    # Security headers
+    header {
+        X-Frame-Options SAMEORIGIN
+        X-XSS-Protection "1; mode=block"
+        X-Content-Type-Options nosniff
+        Referrer-Policy no-referrer-when-downgrade
+        Content-Security-Policy "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; font-src 'self' https:;"
+        -Server
+    }
+    
+    # File upload limit
+    request_body {
+        max_size 100MB
+    }
+    
+    log {
+        output stdout
+        format console
+    }
 }
