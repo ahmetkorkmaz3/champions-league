@@ -86,9 +86,7 @@
                   <div class="flex items-center">
                     <div class="flex-shrink-0 h-8 w-8">
                       <div class="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center">
-                        <span class="text-sm font-medium text-gray-700">
-                          {{ standing.team.name.charAt(0) }}
-                        </span>
+                        <img :src="standing.team.logo" :alt="standing.team.name" />
                       </div>
                     </div>
                     <div class="ml-4">
@@ -161,9 +159,7 @@
                     {{ match.home_team.name }}
                   </span>
                   <div class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
-                    <span class="text-xs font-medium text-gray-700">
-                      {{ match.home_team.name.charAt(0) }}
-                    </span>
+                      <img :src="match.home_team.logo" :alt="match.home_team.name" />
                   </div>
                 </div>
 
@@ -181,9 +177,7 @@
                 <!-- Away Team -->
                 <div class="flex items-center space-x-3 flex-1 justify-start">
                   <div class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
-                    <span class="text-xs font-medium text-gray-700">
-                      {{ match.away_team.name.charAt(0) }}
-                    </span>
+                      <img :src="match.away_team.logo" :alt="match.away_team.name" />
                   </div>
                   <span class="text-sm font-medium text-gray-900">
                     {{ match.away_team.name }}
@@ -268,6 +262,7 @@ interface Team {
   id: number
   name: string
   city: string
+  logo?: string
 }
 
 interface Match {

@@ -16,28 +16,28 @@ class ChampionsLeagueSeeder extends Seeder
         // Takımları oluştur
         $teams = [
             [
-                'name' => 'Real Madrid',
+                'name' => 'Arsenal',
                 'power_level' => 95,
-                'city' => 'Madrid',
-                'logo' => 'real-madrid.png',
+                'city' => 'London',
+                'logo' => 'https://resources.premierleague.com/premierleague25/badges/3.svg',
             ],
             [
-                'name' => 'Manchester City',
+                'name' => 'Chelsea',
                 'power_level' => 92,
-                'city' => 'Manchester',
-                'logo' => 'man-city.png',
+                'city' => 'London',
+                'logo' => 'https://resources.premierleague.com/premierleague25/badges/8.svg',
             ],
             [
-                'name' => 'Bayern Munich',
+                'name' => 'Liverpool',
                 'power_level' => 90,
-                'city' => 'Munich',
-                'logo' => 'bayern.png',
+                'city' => 'Liverpool',
+                'logo' => 'https://resources.premierleague.com/premierleague25/badges/14.svg',
             ],
             [
-                'name' => 'Paris Saint-Germain',
+                'name' => 'Manchester United',
                 'power_level' => 88,
-                'city' => 'Paris',
-                'logo' => 'psg.png',
+                'city' => 'Trafford',
+                'logo' => 'https://resources.premierleague.com/premierleague25/badges/1.svg',
             ],
         ];
 
