@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\PlayWeekRequest;
+use App\Http\Resources\GameMatchResource;
+use App\Http\Resources\LeagueStandingResource;
 use App\Models\GameMatch;
 use App\Models\LeagueStanding;
 use App\Services\LeagueService;
-use Illuminate\Http\Response;
+use Illuminate\Http\JsonResponse;
 
 class ChampionsLeagueApiController extends Controller
 {
@@ -21,7 +23,7 @@ class ChampionsLeagueApiController extends Controller
     /**
      * Reset all matches
      */
-    public function resetMatches(): Response
+    public function resetMatches(): JsonResponse
     {
         // Reset all matches
         GameMatch::query()->update([
@@ -33,27 +35,81 @@ class ChampionsLeagueApiController extends Controller
         // Clear standings
         LeagueStanding::query()->delete();
 
-        return response()->noContent();
+        // Return updated data
+        $matches = GameMatch::with(['homeTeam', 'awayTeam'])
+            ->orderBy('week')
+            ->orderBy('id')
+            ->get();
+
+        $matchesByWeek = $matches->groupBy('week')->map(function ($weekMatches) {
+            return GameMatchResource::collection($weekMatches);
+        });
+
+        $standings = LeagueStanding::with('team')
+            ->orderBy('position', 'asc')
+            ->get();
+
+        return response()->json([
+            'matches' => GameMatchResource::collection($matches),
+            'matchesByWeek' => $matchesByWeek,
+            'standings' => LeagueStandingResource::collection($standings),
+        ]);
     }
 
     /**
      * Play all matches
      */
-    public function playAllMatches(): Response
+    public function playAllMatches(): JsonResponse
     {
         $this->leagueService->playAllMatches();
 
-        return response()->noContent();
+        // Return updated data
+        $matches = GameMatch::with(['homeTeam', 'awayTeam'])
+            ->orderBy('week')
+            ->orderBy('id')
+            ->get();
+
+        $matchesByWeek = $matches->groupBy('week')->map(function ($weekMatches) {
+            return GameMatchResource::collection($weekMatches);
+        });
+
+        $standings = LeagueStanding::with('team')
+            ->orderBy('position', 'asc')
+            ->get();
+
+        return response()->json([
+            'matches' => GameMatchResource::collection($matches),
+            'matchesByWeek' => $matchesByWeek,
+            'standings' => LeagueStandingResource::collection($standings),
+        ]);
     }
 
     /**
      * Play matches for a specific week
      */
-    public function playWeek(PlayWeekRequest $request): Response
+    public function playWeek(PlayWeekRequest $request): JsonResponse
     {
         $week = $request->validated('week');
         $this->leagueService->playWeek($week);
 
-        return response()->noContent();
+        // Return updated data
+        $matches = GameMatch::with(['homeTeam', 'awayTeam'])
+            ->orderBy('week')
+            ->orderBy('id')
+            ->get();
+
+        $matchesByWeek = $matches->groupBy('week')->map(function ($weekMatches) {
+            return GameMatchResource::collection($weekMatches);
+        });
+
+        $standings = LeagueStanding::with('team')
+            ->orderBy('position', 'asc')
+            ->get();
+
+        return response()->json([
+            'matches' => GameMatchResource::collection($matches),
+            'matchesByWeek' => $matchesByWeek,
+            'standings' => LeagueStandingResource::collection($standings),
+        ]);
     }
 }

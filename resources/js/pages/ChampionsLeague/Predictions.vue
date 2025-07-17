@@ -12,12 +12,12 @@
               {{ currentWeek }}. hafta sonrası tahmini lig tablosu
             </p>
           </div>
-          <router-link
-            :to="{ name: 'champions-league.index' }"
+          <Link
+            :href="route('champions-league.index')"
             class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
           >
             ← Geri Dön
-          </router-link>
+          </Link>
         </div>
       </div>
 
@@ -230,6 +230,8 @@
 </template>
 
 <script setup lang="ts">
+import { Link } from '@inertiajs/vue3';
+
 const props = defineProps({
   currentWeek: Number,
   predictedStandings: Array,

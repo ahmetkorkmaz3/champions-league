@@ -244,7 +244,7 @@ describe('PUT /api/champions-league/teams/{id}', function () {
         // Arrange
         $team1 = Team::factory()->create(['name' => 'Barcelona']);
         $team2 = Team::factory()->create(['name' => 'Arsenal']);
-        
+
         $updateData = [
             'name' => 'Barcelona', // Duplicate of team1
         ];

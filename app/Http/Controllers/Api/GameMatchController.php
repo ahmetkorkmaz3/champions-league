@@ -56,11 +56,29 @@ class GameMatchController extends Controller
     /**
      * Update the specified match
      */
-    public function update(UpdateGameMatchRequest $request, GameMatch $match): Response
+    public function update(UpdateGameMatchRequest $request, GameMatch $match): JsonResponse
     {
         $match->update($request->validated());
 
-        return response()->noContent();
+        // Return updated data
+        $matches = GameMatch::with(['homeTeam', 'awayTeam'])
+            ->orderBy('week')
+            ->orderBy('id')
+            ->get();
+
+        $matchesByWeek = $matches->groupBy('week')->map(function ($weekMatches) {
+            return GameMatchResource::collection($weekMatches);
+        });
+
+        $standings = \App\Models\LeagueStanding::with('team')
+            ->orderBy('position', 'asc')
+            ->get();
+
+        return response()->json([
+            'matches' => GameMatchResource::collection($matches),
+            'matchesByWeek' => $matchesByWeek,
+            'standings' => \App\Http\Resources\LeagueStandingResource::collection($standings),
+        ]);
     }
 
     /**

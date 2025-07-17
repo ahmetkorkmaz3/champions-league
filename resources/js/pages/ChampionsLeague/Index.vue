@@ -29,12 +29,11 @@
           {{ isLoading ? 'Sıfırlanıyor...' : '🗑️ Tüm Maçları Sıfırla' }}
         </button>
 
-        <router-link
-          :to="{ name: 'champions-league.predictions' }"
-          class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
-        >
+        <Link
+            :href="route('champions-league.predictions')"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors">
           🔮 Tahminler
-        </router-link>
+        </Link>
       </div>
 
       <!-- League Table -->
@@ -79,7 +78,7 @@
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-for="standing in standings" :key="standing.id" class="hover:bg-gray-50">
+              <tr v-for="standing in localStandings" :key="standing.id" class="hover:bg-gray-50">
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                   {{ standing.position }}
                 </td>
@@ -133,7 +132,7 @@
       </div>
 
       <!-- Matches by Week -->
-      <div v-for="(weekMatches, week) in matchesByWeek" :key="week" class="bg-white rounded-lg shadow-md mb-6">
+      <div v-for="(weekMatches, week) in localMatchesByWeek" :key="week" class="bg-white rounded-lg shadow-md mb-6">
         <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
           <h3 class="text-lg font-semibold text-gray-900">
             📅 {{ week }}. Hafta
@@ -262,7 +261,8 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { router } from '@inertiajs/vue3'
+import axios from 'axios'
+import { Link } from '@inertiajs/vue3';
 
 interface Team {
   id: number
@@ -300,7 +300,10 @@ const props = defineProps<{
   standings: Standing[]
 }>()
 
-
+// Reactive state
+const localMatches = ref<Match[]>(props.matches)
+const localMatchesByWeek = ref<Record<number, Match[]>>(props.matchesByWeek)
+const localStandings = ref<Standing[]>(props.standings)
 
 const isLoading = ref(false)
 const showEditModal = ref(false)
@@ -311,19 +314,28 @@ const editForm = ref({
 })
 
 const isWeekPlayed = (week: number): boolean => {
-  return props.matchesByWeek[week]?.every(match => match.is_played) || false
+  return localMatchesByWeek.value[week]?.every(match => match.is_played) || false
+}
+
+const updateLocalState = (data: any) => {
+  if (data.matches) {
+    localMatches.value = data.matches
+  }
+  if (data.matchesByWeek) {
+    localMatchesByWeek.value = data.matchesByWeek
+  }
+  if (data.standings) {
+    localStandings.value = data.standings
+  }
 }
 
 const playWeek = async (week: number) => {
   isLoading.value = true
   try {
-    await router.post(route('api.champions-league.matches.play-week'), { week })
-    // Başarılı olduktan sonra sayfayı yeniden ziyaret et
-    router.visit(route('champions-league.index'), {
-      method: 'get',
-      preserveState: false,
-      preserveScroll: false
-    })
+    const response = await axios.post(route('api.champions-league.matches.play-week'), { week })
+    if (response.data) {
+      updateLocalState(response.data)
+    }
   } catch (error) {
     console.error('Hafta oynatılırken hata oluştu:', error)
     alert('Hafta oynatılırken bir hata oluştu!')
@@ -335,13 +347,10 @@ const playWeek = async (week: number) => {
 const playAllMatches = async () => {
   isLoading.value = true
   try {
-    await router.post(route('api.champions-league.matches.play-all'))
-    // Başarılı olduktan sonra sayfayı yeniden ziyaret et
-    router.visit(route('champions-league.index'), {
-      method: 'get',
-      preserveState: false,
-      preserveScroll: false
-    })
+    const response = await axios.post(route('api.champions-league.matches.play-all'))
+    if (response.data) {
+      updateLocalState(response.data)
+    }
   } catch (error) {
     console.error('Tüm maçlar oynatılırken hata oluştu:', error)
     alert('Tüm maçlar oynatılırken bir hata oluştu!')
@@ -362,15 +371,12 @@ const editMatch = (match: Match) => {
 const saveMatchEdit = async () => {
   try {
     if (!editingMatch.value) return
-    await router.put(route('api.champions-league.matches.update', editingMatch.value.id), editForm.value)
+    const response = await axios.put(route('api.champions-league.matches.update', editingMatch.value.id), editForm.value)
+    if (response.data) {
+      updateLocalState(response.data)
+    }
     showEditModal.value = false
     editingMatch.value = null
-    // Başarılı olduktan sonra sayfayı yeniden ziyaret et
-    router.visit(route('champions-league.index'), {
-      method: 'get',
-      preserveState: false,
-      preserveScroll: false
-    })
   } catch (error) {
     console.error('Maç güncellenirken hata oluştu:', error)
     alert('Maç güncellenirken bir hata oluştu!')
@@ -380,18 +386,14 @@ const saveMatchEdit = async () => {
 const resetMatch = async (matchId: number) => {
   if (confirm('Bu maçı sıfırlamak istediğinizden emin misiniz?')) {
     try {
-      // Maçı sıfırlamak için önce mevcut skoru temizle
-      await router.put(route('api.champions-league.matches.update', matchId), {
+      const response = await axios.put(route('api.champions-league.matches.update', matchId), {
         home_score: null,
         away_score: null,
         is_played: false
       })
-      // Başarılı olduktan sonra sayfayı yeniden ziyaret et
-      router.visit(route('champions-league.index'), {
-        method: 'get',
-        preserveState: false,
-        preserveScroll: false
-      })
+      if (response.data) {
+        updateLocalState(response.data)
+      }
     } catch (error) {
       console.error('Maç sıfırlanırken hata oluştu:', error)
       alert('Maç sıfırlanırken bir hata oluştu!')
@@ -403,13 +405,10 @@ const resetAllMatches = async () => {
   if (confirm('TÜM maçları sıfırlamak istediğinizden emin misiniz? Bu işlem geri alınamaz!')) {
     isLoading.value = true
     try {
-      await router.post(route('api.champions-league.matches.reset'))
-      // Başarılı olduktan sonra sayfayı yeniden ziyaret et
-      router.visit(route('champions-league.index'), {
-        method: 'get',
-        preserveState: false,
-        preserveScroll: false
-      })
+      const response = await axios.post(route('api.champions-league.matches.reset'))
+      if (response.data) {
+        updateLocalState(response.data)
+      }
     } catch (error) {
       console.error('Maçlar sıfırlanırken hata oluştu:', error)
       alert('Maçlar sıfırlanırken bir hata oluştu!')

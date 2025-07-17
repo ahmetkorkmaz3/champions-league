@@ -292,7 +292,7 @@ describe('POST /api/champions-league/matches/reset', function () {
 
         // Check all matches are reset
         $matches = GameMatch::all();
-        expect($matches->every(fn ($match) => !$match->is_played))->toBeTrue();
+        expect($matches->every(fn ($match) => ! $match->is_played))->toBeTrue();
         expect($matches->every(fn ($match) => $match->home_score === null))->toBeTrue();
         expect($matches->every(fn ($match) => $match->away_score === null))->toBeTrue();
 
