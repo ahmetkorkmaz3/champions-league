@@ -6,7 +6,6 @@ use App\Models\GameMatch;
 use App\Models\Team;
 use App\Services\LeagueService;
 use App\Services\MatchService;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 

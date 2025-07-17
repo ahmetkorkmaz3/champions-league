@@ -30,4 +30,4 @@ class LeagueStandingResource extends JsonResource
             'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
-} 
+}

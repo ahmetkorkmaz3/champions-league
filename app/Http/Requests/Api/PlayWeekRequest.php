@@ -37,4 +37,4 @@ class PlayWeekRequest extends FormRequest
             'week.max' => 'Hafta numarası en fazla 10 olmalıdır.',
         ];
     }
-} 
+}

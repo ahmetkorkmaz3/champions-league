@@ -60,4 +60,4 @@ class StoreLeagueStandingRequest extends FormRequest
             'position.min' => 'Sıra pozisyonu en az 1 olmalıdır.',
         ];
     }
-} 
+}

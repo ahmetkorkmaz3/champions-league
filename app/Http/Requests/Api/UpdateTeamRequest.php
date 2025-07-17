@@ -50,4 +50,4 @@ class UpdateTeamRequest extends FormRequest
             'city.required' => 'Şehir adı gereklidir.',
         ];
     }
-} 
+}

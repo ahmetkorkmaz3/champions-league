@@ -26,14 +26,14 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::prefix('champions-league')->name('api.champions-league.')->group(function () {
     // Teams - Full CRUD
     Route::apiResource('teams', TeamController::class);
-    
+
     // Matches - Full CRUD + Custom endpoints
     Route::apiResource('matches', GameMatchController::class);
     Route::get('/matches/by-week', [GameMatchController::class, 'byWeek'])->name('matches.by-week');
-    
+
     // Standings - Full CRUD
     Route::apiResource('standings', LeagueStandingController::class);
-    
+
     // League Actions
     Route::post('/matches/reset', [ChampionsLeagueApiController::class, 'resetMatches'])->name('matches.reset');
     Route::post('/matches/play-all', [ChampionsLeagueApiController::class, 'playAllMatches'])->name('matches.play-all');

@@ -42,7 +42,7 @@ class ChampionsLeagueApiController extends Controller
     public function playAllMatches(): Response
     {
         $this->leagueService->playAllMatches();
-        
+
         return response()->noContent();
     }
 

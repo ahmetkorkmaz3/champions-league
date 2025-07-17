@@ -43,4 +43,4 @@ class StoreTeamRequest extends FormRequest
             'city.required' => 'Şehir adı gereklidir.',
         ];
     }
-} 
+}

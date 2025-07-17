@@ -14,25 +14,25 @@ beforeEach(function () {
         'power_level' => 95,
         'city' => 'Madrid',
     ]);
-    
+
     $this->team2 = Team::create([
         'name' => 'Manchester City',
         'power_level' => 92,
         'city' => 'Manchester',
     ]);
-    
+
     $this->team3 = Team::create([
         'name' => 'Bayern Munich',
         'power_level' => 90,
         'city' => 'Munich',
     ]);
-    
+
     $this->team4 = Team::create([
         'name' => 'PSG',
         'power_level' => 88,
         'city' => 'Paris',
     ]);
-    
+
     // Test maçları oluştur
     $this->match1 = GameMatch::create([
         'home_team_id' => $this->team1->id,
@@ -42,7 +42,7 @@ beforeEach(function () {
         'week' => 1,
         'is_played' => true,
     ]);
-    
+
     $this->match2 = GameMatch::create([
         'home_team_id' => $this->team3->id,
         'away_team_id' => $this->team4->id,
@@ -51,14 +51,14 @@ beforeEach(function () {
         'week' => 1,
         'is_played' => true,
     ]);
-    
-    $this->leagueService = new LeagueService();
+
+    $this->leagueService = new LeagueService;
     $this->leagueService->updateStandings();
 });
 
 test('get standings returns correct response structure', function () {
     $response = $this->getJson('/api/champions-league/standings');
-    
+
     $response->assertStatus(200)
         ->assertJsonStructure([
             'success',
@@ -79,20 +79,20 @@ test('get standings returns correct response structure', function () {
                         'name',
                         'power_level',
                         'city',
-                    ]
-                ]
+                    ],
+                ],
             ],
-            'message'
+            'message',
         ])
         ->assertJson([
             'success' => true,
-            'message' => 'Lig tablosu başarıyla getirildi'
+            'message' => 'Lig tablosu başarıyla getirildi',
         ]);
 });
 
 test('get matches by week returns correct response', function () {
     $response = $this->getJson('/api/champions-league/matches/week/1');
-    
+
     $response->assertStatus(200)
         ->assertJsonStructure([
             'success',
@@ -116,22 +116,22 @@ test('get matches by week returns correct response', function () {
                         'name',
                         'power_level',
                         'city',
-                    ]
-                ]
+                    ],
+                ],
             ],
-            'message'
+            'message',
         ])
         ->assertJson([
             'success' => true,
-            'message' => '1. hafta maçları başarıyla getirildi'
+            'message' => '1. hafta maçları başarıyla getirildi',
         ]);
-    
+
     expect($response->json('data'))->toHaveCount(2);
 });
 
 test('get all matches returns all matches', function () {
     $response = $this->getJson('/api/champions-league/matches');
-    
+
     $response->assertStatus(200)
         ->assertJsonStructure([
             'success',
@@ -145,22 +145,22 @@ test('get all matches returns all matches', function () {
                     'week',
                     'is_played',
                     'home_team',
-                    'away_team'
-                ]
+                    'away_team',
+                ],
             ],
-            'message'
+            'message',
         ])
         ->assertJson([
             'success' => true,
-            'message' => 'Tüm maçlar başarıyla getirildi'
+            'message' => 'Tüm maçlar başarıyla getirildi',
         ]);
-    
+
     expect($response->json('data'))->toHaveCount(2);
 });
 
 test('get teams returns all teams', function () {
     $response = $this->getJson('/api/champions-league/teams');
-    
+
     $response->assertStatus(200)
         ->assertJsonStructure([
             'success',
@@ -170,22 +170,22 @@ test('get teams returns all teams', function () {
                     'name',
                     'power_level',
                     'city',
-                    'logo'
-                ]
+                    'logo',
+                ],
             ],
-            'message'
+            'message',
         ])
         ->assertJson([
             'success' => true,
-            'message' => 'Takımlar başarıyla getirildi'
+            'message' => 'Takımlar başarıyla getirildi',
         ]);
-    
+
     expect($response->json('data'))->toHaveCount(4);
 });
 
 test('get match returns specific match', function () {
     $response = $this->getJson("/api/champions-league/matches/{$this->match1->id}");
-    
+
     $response->assertStatus(200)
         ->assertJsonStructure([
             'success',
@@ -198,9 +198,9 @@ test('get match returns specific match', function () {
                 'week',
                 'is_played',
                 'home_team',
-                'away_team'
+                'away_team',
             ],
-            'message'
+            'message',
         ])
         ->assertJson([
             'success' => true,
@@ -213,13 +213,13 @@ test('get match returns specific match', function () {
                 'away_score' => 1,
                 'week' => 1,
                 'is_played' => true,
-            ]
+            ],
         ]);
 });
 
 test('get matches grouped by week returns correct structure', function () {
     $response = $this->getJson('/api/champions-league/matches/grouped');
-    
+
     $response->assertStatus(200)
         ->assertJsonStructure([
             'success',
@@ -234,33 +234,33 @@ test('get matches grouped by week returns correct structure', function () {
                         'week',
                         'is_played',
                         'home_team',
-                        'away_team'
-                    ]
-                ]
+                        'away_team',
+                    ],
+                ],
             ],
-            'message'
+            'message',
         ])
         ->assertJson([
             'success' => true,
-            'message' => 'Haftalara göre gruplandırılmış maçlar başarıyla getirildi'
+            'message' => 'Haftalara göre gruplandırılmış maçlar başarıyla getirildi',
         ]);
-    
+
     expect($response->json('data.1'))->toHaveCount(2);
 });
 
 test('get matches by non-existent week returns empty array', function () {
     $response = $this->getJson('/api/champions-league/matches/week/5');
-    
+
     $response->assertStatus(200)
         ->assertJson([
             'success' => true,
             'data' => [],
-            'message' => '5. hafta maçları başarıyla getirildi'
+            'message' => '5. hafta maçları başarıyla getirildi',
         ]);
 });
 
 test('get non-existent match returns 404', function () {
     $response = $this->getJson('/api/champions-league/matches/999');
-    
+
     $response->assertStatus(404);
 });

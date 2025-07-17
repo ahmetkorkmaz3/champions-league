@@ -63,4 +63,4 @@ class LeagueStandingController extends Controller
 
         return response()->noContent();
     }
-} 
+}

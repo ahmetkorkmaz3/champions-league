@@ -88,7 +88,7 @@ class GameMatchController extends Controller
         });
 
         return response()->json([
-            'data' => $matchesByWeek
+            'data' => $matchesByWeek,
         ]);
     }
 }

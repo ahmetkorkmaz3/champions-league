@@ -49,4 +49,4 @@ class StoreGameMatchRequest extends FormRequest
             'away_score.min' => 'Deplasman skoru en az 0 olmalıdır.',
         ];
     }
-} 
+}
