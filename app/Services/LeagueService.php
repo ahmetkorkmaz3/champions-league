@@ -282,24 +282,62 @@ class LeagueService
     {
         GameMatch::truncate();
 
-        $teams = Team::all();
-        $week = 1;
+        $teams = Team::all()->pluck('id')->toArray();
+        $teamCount = count($teams);
 
-        for ($i = 0; $i < count($teams); $i++) {
-            for ($j = $i + 1; $j < count($teams); $j++) {
-                GameMatch::create([
-                    'home_team_id' => $teams[$i]->id,
-                    'away_team_id' => $teams[$j]->id,
-                    'week' => $week,
-                    'is_played' => false,
-                ]);
+        $weeks = ($teamCount - 1) * 2; // Çift devreli
+        $half = $teamCount / 2;
 
-                if ($week < 6) {
-                    $week++;
-                } else {
-                    $week = 1;
-                }
+        $schedule = [];
+
+        // Takımları sabit ve dönen olarak ayır
+        $fixed = $teams[0];
+        $rotating = array_slice($teams, 1);
+
+        // İlk devre
+        for ($week = 0; $week < $teamCount - 1; $week++) {
+            $pairings = [];
+            $pairings[] = [$fixed, $rotating[$week % ($teamCount - 1)]];
+
+            for ($i = 1; $i < $half; $i++) {
+                $home = $rotating[($week + $i) % ($teamCount - 1)];
+                $away = $rotating[($week - $i + $teamCount - 1) % ($teamCount - 1)];
+                $pairings[] = [$home, $away];
             }
+
+            foreach ($pairings as $pair) {
+                $schedule[] = [
+                    'home_team_id' => $pair[0],
+                    'away_team_id' => $pair[1],
+                    'week' => $week + 1,
+                    'is_played' => false,
+                ];
+            }
+        }
+
+        // İkinci devre (ev-deplasman değişiyor)
+        for ($week = 0; $week < $teamCount - 1; $week++) {
+            $pairings = [];
+            $pairings[] = [$rotating[$week % ($teamCount - 1)], $fixed];
+
+            for ($i = 1; $i < $half; $i++) {
+                $home = $rotating[($week - $i + $teamCount - 1) % ($teamCount - 1)];
+                $away = $rotating[($week + $i) % ($teamCount - 1)];
+                $pairings[] = [$home, $away];
+            }
+
+            foreach ($pairings as $pair) {
+                $schedule[] = [
+                    'home_team_id' => $pair[0],
+                    'away_team_id' => $pair[1],
+                    'week' => $week + 1 + ($teamCount - 1),
+                    'is_played' => false,
+                ];
+            }
+        }
+
+        foreach ($schedule as $matchData) {
+            GameMatch::create($matchData);
         }
     }
 
