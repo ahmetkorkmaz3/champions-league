@@ -260,35 +260,73 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref } from 'vue'
 import { router } from '@inertiajs/vue3'
 
-const props = defineProps({
-  teams: Array,
-  matches: Array,
-  matchesByWeek: Object,
-  standings: Array,
-})
+interface Team {
+  id: number
+  name: string
+  city: string
+}
+
+interface Match {
+  id: number
+  home_team: Team
+  away_team: Team
+  home_score: number | null
+  away_score: number | null
+  is_played: boolean
+  week: number
+}
+
+interface Standing {
+  id: number
+  position: number
+  team: Team
+  wins: number
+  draws: number
+  losses: number
+  goals_for: number
+  goals_against: number
+  goal_difference: number
+  points: number
+}
+
+const props = defineProps<{
+  teams: Team[]
+  matches: Match[]
+  matchesByWeek: Record<number, Match[]>
+  standings: Standing[]
+}>()
 
 
 
 const isLoading = ref(false)
 const showEditModal = ref(false)
-const editingMatch = ref(null)
+const editingMatch = ref<Match | null>(null)
 const editForm = ref({
   home_score: 0,
   away_score: 0,
 })
 
-const isWeekPlayed = (week) => {
+const isWeekPlayed = (week: number): boolean => {
   return props.matchesByWeek[week]?.every(match => match.is_played) || false
 }
 
-const playWeek = async (week) => {
+const playWeek = async (week: number) => {
   isLoading.value = true
   try {
-    await router.post(route('champions-league.play-week'), { week })
+    await router.post(route('api.champions-league.matches.play-week'), { week })
+    // Başarılı olduktan sonra sayfayı yeniden ziyaret et
+    router.visit(route('champions-league.index'), {
+      method: 'get',
+      preserveState: false,
+      preserveScroll: false
+    })
+  } catch (error) {
+    console.error('Hafta oynatılırken hata oluştu:', error)
+    alert('Hafta oynatılırken bir hata oluştu!')
   } finally {
     isLoading.value = false
   }
@@ -297,30 +335,67 @@ const playWeek = async (week) => {
 const playAllMatches = async () => {
   isLoading.value = true
   try {
-    await router.post(route('champions-league.play-all'))
+    await router.post(route('api.champions-league.matches.play-all'))
+    // Başarılı olduktan sonra sayfayı yeniden ziyaret et
+    router.visit(route('champions-league.index'), {
+      method: 'get',
+      preserveState: false,
+      preserveScroll: false
+    })
+  } catch (error) {
+    console.error('Tüm maçlar oynatılırken hata oluştu:', error)
+    alert('Tüm maçlar oynatılırken bir hata oluştu!')
   } finally {
     isLoading.value = false
   }
 }
 
-const editMatch = (match) => {
+const editMatch = (match: Match) => {
   editingMatch.value = match
   editForm.value = {
-    home_score: match.home_score,
-    away_score: match.away_score,
+    home_score: match.home_score || 0,
+    away_score: match.away_score || 0,
   }
   showEditModal.value = true
 }
 
 const saveMatchEdit = async () => {
-  await router.put(route('champions-league.matches.update', editingMatch.value.id), editForm.value)
-  showEditModal.value = false
-  editingMatch.value = null
+  try {
+    if (!editingMatch.value) return
+    await router.put(route('api.champions-league.matches.update', editingMatch.value.id), editForm.value)
+    showEditModal.value = false
+    editingMatch.value = null
+    // Başarılı olduktan sonra sayfayı yeniden ziyaret et
+    router.visit(route('champions-league.index'), {
+      method: 'get',
+      preserveState: false,
+      preserveScroll: false
+    })
+  } catch (error) {
+    console.error('Maç güncellenirken hata oluştu:', error)
+    alert('Maç güncellenirken bir hata oluştu!')
+  }
 }
 
-const resetMatch = async (matchId) => {
+const resetMatch = async (matchId: number) => {
   if (confirm('Bu maçı sıfırlamak istediğinizden emin misiniz?')) {
-    await router.put(route('champions-league.matches.reset', matchId))
+    try {
+      // Maçı sıfırlamak için önce mevcut skoru temizle
+      await router.put(route('api.champions-league.matches.update', matchId), {
+        home_score: null,
+        away_score: null,
+        is_played: false
+      })
+      // Başarılı olduktan sonra sayfayı yeniden ziyaret et
+      router.visit(route('champions-league.index'), {
+        method: 'get',
+        preserveState: false,
+        preserveScroll: false
+      })
+    } catch (error) {
+      console.error('Maç sıfırlanırken hata oluştu:', error)
+      alert('Maç sıfırlanırken bir hata oluştu!')
+    }
   }
 }
 
@@ -328,17 +403,13 @@ const resetAllMatches = async () => {
   if (confirm('TÜM maçları sıfırlamak istediğinizden emin misiniz? Bu işlem geri alınamaz!')) {
     isLoading.value = true
     try {
-      const response = await router.post(route('api.champions-league.matches.reset'))
-      
-      // HTTP 204 başarılı demektir
-      if (response.status === 204) {
-        // Başarılı olduktan sonra sayfayı yeniden ziyaret et
-        router.visit(route('champions-league.index'), {
-          method: 'get',
-          preserveState: false,
-          preserveScroll: false
-        })
-      }
+      await router.post(route('api.champions-league.matches.reset'))
+      // Başarılı olduktan sonra sayfayı yeniden ziyaret et
+      router.visit(route('champions-league.index'), {
+        method: 'get',
+        preserveState: false,
+        preserveScroll: false
+      })
     } catch (error) {
       console.error('Maçlar sıfırlanırken hata oluştu:', error)
       alert('Maçlar sıfırlanırken bir hata oluştu!')
