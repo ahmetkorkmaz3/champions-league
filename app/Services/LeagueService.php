@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Models\GameMatch;
 use App\Models\LeagueStanding;
 use App\Models\Team;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection;
 
 class LeagueService
 {
@@ -220,5 +220,48 @@ class LeagueService
             $standings[$awayTeamId]['draws']++;
             $standings[$awayTeamId]['points'] += 1;
         }
+    }
+
+    /**
+     * Play all matches
+     */
+    public function playAllMatches(): void
+    {
+        $unplayedMatches = GameMatch::where('is_played', false)->get();
+        $matchService = new \App\Services\MatchService;
+
+        foreach ($unplayedMatches as $match) {
+            $result = $matchService->simulateMatch($match);
+            $match->update([
+                'home_score' => $result['home_score'],
+                'away_score' => $result['away_score'],
+                'is_played' => true,
+            ]);
+        }
+
+        $this->updateStandings();
+    }
+
+    /**
+     * Play matches for a specific week
+     */
+    public function playWeek(int $week): void
+    {
+        $weekMatches = GameMatch::where('week', $week)
+            ->where('is_played', false)
+            ->get();
+
+        $matchService = new \App\Services\MatchService;
+
+        foreach ($weekMatches as $match) {
+            $result = $matchService->simulateMatch($match);
+            $match->update([
+                'home_score' => $result['home_score'],
+                'away_score' => $result['away_score'],
+                'is_played' => true,
+            ]);
+        }
+
+        $this->updateStandings();
     }
 }

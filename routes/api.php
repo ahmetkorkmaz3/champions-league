@@ -21,18 +21,19 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 // Champions League API Routes
 Route::prefix('champions-league')->name('api.champions-league.')->group(function () {
-    // Lig tablosu
-    Route::get('/standings', [ChampionsLeagueApiController::class, 'getStandings'])->name('standings');
+    // Teams
+    Route::get('/teams', [ChampionsLeagueApiController::class, 'teams'])->name('teams');
     
-    // Maçlar
-    Route::get('/matches', [ChampionsLeagueApiController::class, 'getAllMatches'])->name('matches.all');
-    Route::get('/matches/week/{week}', [ChampionsLeagueApiController::class, 'getMatchesByWeek'])->name('matches.by-week');
-    Route::get('/matches/grouped', [ChampionsLeagueApiController::class, 'getMatchesByWeekGrouped'])->name('matches.grouped');
-    Route::get('/matches/{match}', [ChampionsLeagueApiController::class, 'getMatch'])->name('matches.show');
+    // Matches
+    Route::get('/matches', [ChampionsLeagueApiController::class, 'matches'])->name('matches.index');
+    Route::get('/matches/by-week', [ChampionsLeagueApiController::class, 'matchesByWeek'])->name('matches.by-week');
+    Route::get('/matches/{match}', [ChampionsLeagueApiController::class, 'showMatch'])->name('matches.show');
     
-    // Takımlar
-    Route::get('/teams', [ChampionsLeagueApiController::class, 'getTeams'])->name('teams');
+    // Standings
+    Route::get('/standings', [ChampionsLeagueApiController::class, 'standings'])->name('standings');
     
-    // Maç sıfırlama
-    Route::post('/matches/reset', [ChampionsLeagueApiController::class, 'resetAllMatches'])->name('matches.reset');
+    // Actions
+    Route::post('/matches/reset', [ChampionsLeagueApiController::class, 'resetMatches'])->name('matches.reset');
+    Route::post('/matches/play-all', [ChampionsLeagueApiController::class, 'playAllMatches'])->name('matches.play-all');
+    Route::post('/matches/play-week', [ChampionsLeagueApiController::class, 'playWeek'])->name('matches.play-week');
 }); 

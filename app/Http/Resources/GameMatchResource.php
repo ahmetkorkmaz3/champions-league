@@ -20,16 +20,17 @@ class GameMatchResource extends JsonResource
             'is_played' => $this->is_played,
             'home_score' => $this->home_score,
             'away_score' => $this->away_score,
-            'home_team' => new TeamResource($this->whenLoaded('homeTeam')),
-            'away_team' => new TeamResource($this->whenLoaded('awayTeam')),
+            'home_team' => TeamResource::make($this->whenLoaded('homeTeam')),
+            'away_team' => TeamResource::make($this->whenLoaded('awayTeam')),
             'result_string' => $this->getResultString(),
             'winner' => $this->when($this->is_played, function () {
                 $winner = $this->getWinner();
-                return $winner ? new TeamResource($winner) : null;
+
+                return $winner ? TeamResource::make($winner) : null;
             }),
             'is_draw' => $this->when($this->is_played, $this->isDraw()),
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
+            'created_at' => $this->created_at?->toISOString(),
+            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 } 

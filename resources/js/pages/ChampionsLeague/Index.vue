@@ -326,7 +326,25 @@ const resetMatch = async (matchId) => {
 
 const resetAllMatches = async () => {
   if (confirm('TÜM maçları sıfırlamak istediğinizden emin misiniz? Bu işlem geri alınamaz!')) {
-    await router.post(route('champions-league.reset'))
+    isLoading.value = true
+    try {
+      const response = await router.post(route('api.champions-league.matches.reset'))
+      
+      // HTTP 204 başarılı demektir
+      if (response.status === 204) {
+        // Başarılı olduktan sonra sayfayı yeniden ziyaret et
+        router.visit(route('champions-league.index'), {
+          method: 'get',
+          preserveState: false,
+          preserveScroll: false
+        })
+      }
+    } catch (error) {
+      console.error('Maçlar sıfırlanırken hata oluştu:', error)
+      alert('Maçlar sıfırlanırken bir hata oluştu!')
+    } finally {
+      isLoading.value = false
+    }
   }
 }
 </script>

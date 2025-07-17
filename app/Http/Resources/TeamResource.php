@@ -20,8 +20,8 @@ class TeamResource extends JsonResource
             'power_level' => $this->power_level,
             'logo' => $this->logo,
             'city' => $this->city,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
+            'created_at' => $this->created_at?->toISOString(),
+            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 } 

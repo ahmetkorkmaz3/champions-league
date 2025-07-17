@@ -11,6 +11,8 @@ use App\Models\LeagueStanding;
 use App\Models\Team;
 use App\Services\LeagueService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class ChampionsLeagueApiController extends Controller
@@ -23,54 +25,58 @@ class ChampionsLeagueApiController extends Controller
     }
 
     /**
-     * Güncel lig tablosu
+     * Display a listing of teams
      */
-    public function getStandings(): AnonymousResourceCollection
+    public function teams(): AnonymousResourceCollection
     {
-        $standings = $this->leagueService->getCurrentStandings();
-
-        return LeagueStandingResource::collection($standings);
+        $teams = Team::orderBy('name')->get();
+        return TeamResource::collection($teams);
     }
 
     /**
-     * Haftalık maçlar
+     * Display a listing of matches
      */
-    public function getMatchesByWeek(int $week): AnonymousResourceCollection
+    public function matches(Request $request): AnonymousResourceCollection
     {
-        $matches = GameMatch::where('week', $week)
-            ->with(['homeTeam', 'awayTeam'])
-            ->get();
+        $query = GameMatch::with(['homeTeam', 'awayTeam']);
 
+        // Filter by week if provided
+        if ($request->has('week')) {
+            $query->where('week', $request->week);
+        }
+
+        // Filter by played status if provided
+        if ($request->has('played')) {
+            $query->where('is_played', $request->boolean('played'));
+        }
+
+        $matches = $query->orderBy('week')->orderBy('id')->get();
         return GameMatchResource::collection($matches);
     }
 
     /**
-     * Tüm maçlar
+     * Display matches grouped by week
      */
-    public function getAllMatches(): AnonymousResourceCollection
+    public function matchesByWeek(): JsonResponse
     {
         $matches = GameMatch::with(['homeTeam', 'awayTeam'])
             ->orderBy('week')
             ->orderBy('id')
             ->get();
 
-        return GameMatchResource::collection($matches);
+        $matchesByWeek = $matches->groupBy('week')->map(function ($weekMatches) {
+            return GameMatchResource::collection($weekMatches);
+        });
+
+        return response()->json([
+            'data' => $matchesByWeek
+        ]);
     }
 
     /**
-     * Tüm takımlar
+     * Display the specified match
      */
-    public function getTeams(): AnonymousResourceCollection
-    {
-        $teams = Team::all();
-
-        return TeamResource::collection($teams);
-    }
-
-    /**
-     * Belirli bir maç detayı
-     */
-    public function getMatch(GameMatch $match): GameMatchResource
+    public function showMatch(GameMatch $match): GameMatchResource
     {
         $match->load(['homeTeam', 'awayTeam']);
 
@@ -78,17 +84,55 @@ class ChampionsLeagueApiController extends Controller
     }
 
     /**
-     * Haftalara göre gruplandırılmış maçlar
+     * Display current standings
      */
-    public function getMatchesByWeekGrouped()
+    public function standings(): AnonymousResourceCollection
     {
-        $matches = GameMatch::with(['homeTeam', 'awayTeam'])
-            ->orderBy('week')
-            ->orderBy('id')
-            ->get();
+        $standings = $this->leagueService->getCurrentStandings();
 
-        return $matches->groupBy('week')->map(function ($weekMatches) {
-            return GameMatchResource::collection($weekMatches);
-        });
+        return LeagueStandingResource::collection($standings);
+    }
+
+    /**
+     * Reset all matches
+     */
+    public function resetMatches(): Response
+    {
+        // Reset all matches
+        GameMatch::query()->update([
+            'home_score' => null,
+            'away_score' => null,
+            'is_played' => false,
+        ]);
+
+        // Clear standings
+        LeagueStanding::query()->delete();
+
+        return response()->noContent();
+    }
+
+    /**
+     * Play all matches
+     */
+    public function playAllMatches(): Response
+    {
+        $this->leagueService->playAllMatches();
+        
+        return response()->noContent();
+    }
+
+    /**
+     * Play matches for a specific week
+     */
+    public function playWeek(Request $request): Response
+    {
+        $request->validate([
+            'week' => 'required|integer|min:1|max:10'
+        ]);
+
+        $week = $request->week;
+        $this->leagueService->playWeek($week);
+
+        return response()->noContent();
     }
 }

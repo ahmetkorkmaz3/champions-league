@@ -25,9 +25,9 @@ class LeagueStandingResource extends JsonResource
             'draws' => $this->draws,
             'losses' => $this->losses,
             'matches_played' => $this->getMatchesPlayed(),
-            'team' => new TeamResource($this->whenLoaded('team')),
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
+            'team' => TeamResource::make($this->whenLoaded('team')),
+            'created_at' => $this->created_at?->toISOString(),
+            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 } 
