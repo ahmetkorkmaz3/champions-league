@@ -31,7 +31,7 @@ import { Head, Link } from '@inertiajs/vue3';
                                 </span>
                             </span>
                             <span>
-                                <strong>4 Takım:</strong> Real Madrid, Manchester City, Bayern Munich, PSG
+                                <strong>4 Takım:</strong> Arsenal, Chelsea, Liverpool, Manchester United
                             </span>
                         </li>
                         <li

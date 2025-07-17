@@ -147,146 +147,35 @@
 
         <div class="p-6">
           <div class="grid gap-4">
-            <div
+            <MatchRow
               v-for="match in weekMatches"
               :key="match.id"
-              class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50"
-            >
-              <div class="flex items-center space-x-4 flex-1">
-                <!-- Home Team -->
-                <div class="flex items-center space-x-3 flex-1 justify-end">
-                  <span class="text-sm font-medium text-gray-900">
-                    {{ match.home_team.name }}
-                  </span>
-                  <div class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
-                      <img :src="match.home_team.logo" :alt="match.home_team.name" />
-                  </div>
-                </div>
-
-                <!-- Score -->
-                <div class="flex items-center space-x-2">
-                  <span class="text-lg font-bold text-gray-900">
-                    {{ match.is_played ? match.home_score : '-' }}
-                  </span>
-                  <span class="text-gray-500">-</span>
-                  <span class="text-lg font-bold text-gray-900">
-                    {{ match.is_played ? match.away_score : '-' }}
-                  </span>
-                </div>
-
-                <!-- Away Team -->
-                <div class="flex items-center space-x-3 flex-1 justify-start">
-                  <div class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
-                      <img :src="match.away_team.logo" :alt="match.away_team.name" />
-                  </div>
-                  <span class="text-sm font-medium text-gray-900">
-                    {{ match.away_team.name }}
-                  </span>
-                </div>
-              </div>
-
-              <!-- Match Actions -->
-              <div class="ml-4 flex space-x-2">
-                <button
-                  v-if="match.is_played"
-                  @click="editMatch(match)"
-                  class="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                >
-                  Düzenle
-                </button>
-                <button
-                  v-if="match.is_played"
-                  @click="resetMatch(match.id)"
-                  class="text-red-600 hover:text-red-800 text-sm font-medium"
-                >
-                  Sıfırla
-                </button>
-              </div>
-            </div>
+              :match="match"
+              @edit="editMatch"
+              @reset="resetMatch"
+            />
           </div>
         </div>
       </div>
     </div>
 
     <!-- Edit Match Modal -->
-    <div v-if="showEditModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3">
-          <h3 class="text-lg font-medium text-gray-900 mb-4">Maç Sonucunu Düzenle</h3>
-          <div class="space-y-4">
-            <div class="flex items-center justify-between">
-              <span class="text-sm font-medium">{{ editingMatch?.home_team?.name }}</span>
-              <input
-                v-model="editForm.home_score"
-                type="number"
-                min="0"
-                class="w-16 px-2 py-1 border border-gray-300 rounded text-center"
-              />
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-sm font-medium">{{ editingMatch?.away_team?.name }}</span>
-              <input
-                v-model="editForm.away_score"
-                type="number"
-                min="0"
-                class="w-16 px-2 py-1 border border-gray-300 rounded text-center"
-              />
-            </div>
-          </div>
-          <div class="flex justify-end space-x-3 mt-6">
-            <button
-              @click="showEditModal = false"
-              class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
-            >
-              İptal
-            </button>
-            <button
-              @click="saveMatchEdit"
-              class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
-            >
-              Kaydet
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <EditMatchModal
+      :show="showEditModal"
+      :match="editingMatch"
+      @close="showEditModal = false"
+      @save="saveMatchEdit"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import axios from 'axios'
-import { Link } from '@inertiajs/vue3';
-
-interface Team {
-  id: number
-  name: string
-  city: string
-  logo?: string
-}
-
-interface Match {
-  id: number
-  home_team: Team
-  away_team: Team
-  home_score: number | null
-  away_score: number | null
-  is_played: boolean
-  week: number
-}
-
-interface Standing {
-  id: number
-  position: number
-  team: Team
-  wins: number
-  draws: number
-  losses: number
-  goals_for: number
-  goals_against: number
-  goal_difference: number
-  points: number
-}
+import { Link } from '@inertiajs/vue3'
+import MatchRow from '@/components/MatchRow.vue'
+import EditMatchModal from '@/components/EditMatchModal.vue'
+import type { Team, Match, Standing, MatchForm } from '@/types/champions-league'
 
 const props = defineProps<{
   teams: Team[]
@@ -303,10 +192,6 @@ const localStandings = ref<Standing[]>(props.standings)
 const isLoading = ref(false)
 const showEditModal = ref(false)
 const editingMatch = ref<Match | null>(null)
-const editForm = ref({
-  home_score: 0,
-  away_score: 0,
-})
 
 const isWeekPlayed = (week: number): boolean => {
   return localMatchesByWeek.value[week]?.every(match => match.is_played) || false
@@ -356,17 +241,13 @@ const playAllMatches = async () => {
 
 const editMatch = (match: Match) => {
   editingMatch.value = match
-  editForm.value = {
-    home_score: match.home_score || 0,
-    away_score: match.away_score || 0,
-  }
   showEditModal.value = true
 }
 
-const saveMatchEdit = async () => {
+const saveMatchEdit = async (form: MatchForm) => {
   try {
     if (!editingMatch.value) return
-    const response = await axios.put(route('api.champions-league.matches.update', editingMatch.value.id), editForm.value)
+    const response = await axios.put(route('api.champions-league.matches.update', editingMatch.value.id), form)
     if (response.data) {
       updateLocalState(response.data)
     }

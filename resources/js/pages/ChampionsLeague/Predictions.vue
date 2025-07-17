@@ -230,12 +230,13 @@
 </template>
 
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
+import { Link } from '@inertiajs/vue3'
+import type { PredictedStanding } from '@/types/champions-league'
 
-const props = defineProps({
-  currentWeek: Number,
-  predictedStandings: Array,
-})
+const props = defineProps<{
+  currentWeek: number
+  predictedStandings: PredictedStanding[]
+}>()
 
 const getTopScorer = () => {
   if (!props.predictedStandings?.length) return '-'
@@ -261,7 +262,7 @@ const getHighestPoints = () => {
   return `${highestPoints.team.name} (${highestPoints.points})`
 }
 
-const getChampionshipProbability = (position) => {
+const getChampionshipProbability = (position: number) => {
   const probabilities = [60, 25, 15] // İlk 3 takımın şampiyonluk olasılıkları
   return probabilities[position] || 0
 }
