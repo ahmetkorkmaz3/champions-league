@@ -95,20 +95,27 @@ wait_for_containers() {
         sleep 2
     done
     
-    # Laravel app'in hazır olmasını bekle
-    log_info "Laravel app'in hazır olması bekleniyor..."
-    until docker-compose -f docker-compose.production.yml exec -T app php artisan --version; do
-        sleep 2
-    done
+    log_success "PostgreSQL hazır"
     
-    log_success "Tüm container'lar hazır"
+    # App container'ının çalışmasını bekle
+    log_info "App container'ının hazır olması bekleniyor..."
+    sleep 10
+    
+    log_success "Container'lar hazır"
 }
 
 # Composer bağımlılıklarını yükle
 install_composer_dependencies() {
     log_info "Composer bağımlılıkları yükleniyor..."
     
-    docker-compose -f docker-compose.production.yml exec -T app composer install --no-dev --optimize-autoloader
+    # Önce vendor dizininin var olup olmadığını kontrol et
+    if ! docker-compose -f docker-compose.production.yml exec -T app test -d vendor; then
+        log_info "Vendor dizini bulunamadı, Composer install çalıştırılıyor..."
+        docker-compose -f docker-compose.production.yml exec -T app composer install --no-dev --optimize-autoloader
+    else
+        log_info "Vendor dizini mevcut, Composer install kontrol ediliyor..."
+        docker-compose -f docker-compose.production.yml exec -T app composer install --no-dev --optimize-autoloader
+    fi
     
     log_success "Composer bağımlılıkları yüklendi"
 }
@@ -206,6 +213,18 @@ cleanup_old_containers() {
     log_success "Eski container'lar temizlendi"
 }
 
+# Laravel'in çalışıp çalışmadığını test et
+test_laravel() {
+    log_info "Laravel'in çalışıp çalışmadığı test ediliyor..."
+    
+    if docker-compose -f docker-compose.production.yml exec -T app php artisan --version; then
+        log_success "Laravel başarıyla çalışıyor"
+    else
+        log_error "Laravel çalışmıyor! Lütfen logları kontrol edin."
+        exit 1
+    fi
+}
+
 # Ana deployment fonksiyonu
 main() {
     log_info "Docker Production Deployment süreci başlatılıyor..."
@@ -230,6 +249,9 @@ main() {
     
     # Composer bağımlılıklarını yükle
     install_composer_dependencies
+    
+    # Laravel'in çalışıp çalışmadığını test et
+    test_laravel
     
     # NPM bağımlılıklarını yükle ve build et
     install_and_build_npm
