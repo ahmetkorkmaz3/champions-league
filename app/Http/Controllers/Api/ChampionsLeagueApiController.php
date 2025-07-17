@@ -33,7 +33,16 @@ class ChampionsLeagueApiController extends Controller
         ]);
 
         // Clear standings
-        LeagueStanding::query()->delete();
+        LeagueStanding::query()->update([
+            'points' => 0,
+            'goals_for' => 0,
+            'goals_against' => 0,
+            'goal_difference' => 0,
+            'wins' => 0,
+            'draws' => 0,
+            'losses' => 0,
+            'position' => 0,
+        ]);
 
         // Return updated data
         $matches = GameMatch::with(['homeTeam', 'awayTeam'])
@@ -46,7 +55,7 @@ class ChampionsLeagueApiController extends Controller
         });
 
         $standings = LeagueStanding::with('team')
-            ->orderBy('position', 'asc')
+            ->orderBy('position')
             ->get();
 
         return response()->json([
