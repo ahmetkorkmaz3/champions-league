@@ -245,8 +245,6 @@ chmod +x deploy.sh
 docker-compose -f docker-compose.production.yml up -d
 ```
 
-Detaylı deployment bilgileri için [DEPLOYMENT.md](DEPLOYMENT.md) dosyasını inceleyin.
-
 ## 🤝 Katkıda Bulunma
 
 1. Fork yapın
