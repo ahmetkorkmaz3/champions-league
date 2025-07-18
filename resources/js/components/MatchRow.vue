@@ -1,6 +1,6 @@
 <template>
-  <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
-    <div class="flex items-center space-x-4 flex-1">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+    <div class="flex items-center space-x-4 flex-1 mb-3 sm:mb-0">
       <!-- Home Team -->
       <div class="flex items-center space-x-3 flex-1 justify-end">
         <span class="text-sm font-medium text-gray-900">
@@ -34,18 +34,18 @@
     </div>
 
     <!-- Match Actions -->
-    <div class="ml-4 flex space-x-2">
+    <div class="flex justify-center sm:justify-end space-x-2 sm:ml-4">
       <button
         v-if="match.is_played"
         @click="$emit('edit', match)"
-        class="text-blue-600 hover:text-blue-800 text-sm font-medium"
+        class="text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-1 rounded-md hover:bg-blue-50 transition-colors"
       >
         Düzenle
       </button>
       <button
         v-if="match.is_played"
         @click="$emit('reset', match.id)"
-        class="text-red-600 hover:text-red-800 text-sm font-medium"
+        class="text-red-600 hover:text-red-800 text-sm font-medium px-3 py-1 rounded-md hover:bg-red-50 transition-colors"
       >
         Sıfırla
       </button>
