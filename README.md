@@ -1,14 +1,14 @@
 # 🏆 Champions League Simülasyonu
 
-4 takımlı lig simülasyonu - Premier League kurallarına göre maç sonuçlarını tahmin edin!
+4 takımlı çift devreli lig simülasyonu - Premier League kurallarına göre maç sonuçlarını tahmin edin!
 
 ## 📋 Proje Özellikleri
 
 ### ✅ Temel Özellikler
-- **4 Takım**: Real Madrid, Manchester City, Bayern Munich, PSG
-- **6 Maç**: Her takım diğer takımlarla bir kez karşılaşır (tek devreli lig)
+- **4 Takım**: Arsenal, Chelsea, Liverpool, Manchester United
+- **6 Hafta**: Her takım diğer takımlarla 2 kez karşılaşır (çift devreli lig)
 - **Premier League Kuralları**: Galibiyet 3, Beraberlik 1, Mağlubiyet 0 puan
-- **Güç Seviyesi Sistemi**: Her takımın 1-100 arası güç seviyesi var
+- **Güç Seviyesi Sistemi**: Her takımın 88-95 arası güç seviyesi var
 - **Ev Sahibi Avantajı**: Ev sahibi takımlar %10 güç bonusu alır
 
 ### 🎮 Simülasyon Özellikleri
@@ -17,29 +17,43 @@
 - **Gerçekçi Sonuçlar**: Takım güçleri ve ev sahibi avantajı dikkate alınır
 - **Maç Düzenleme**: Oynanmış maçların sonuçlarını manuel olarak değiştirebilirsiniz
 - **Maç Sıfırlama**: Maçları oynanmamış duruma getirebilirsiniz
+- **Şampiyonluk Kutlaması**: Şampiyon belirlendiğinde otomatik kutlama efekti
 
 ### 🔮 Tahmin Sistemi
 - **Akıllı Tahminler**: Oynanan maçların gerçek sonuçları + kalan maçların simülasyonu
 - **Detaylı İstatistikler**: En çok gol atan, en az gol yiyen, şampiyonluk olasılıkları
 - **Görsel Analiz**: Güç seviyesi grafikleri ve sıralama göstergeleri
+- **Şampiyonluk Olasılıkları**: Her takımın şampiyon olma yüzdesi
 
 ## 🛠️ Teknolojiler
 
 ### Backend
 - **PHP 8.2+** - Ana programlama dili
-- **Laravel 12** - Web framework
-- **MySQL/SQLite** - Veritabanı
+- **Laravel 12** - Modern web framework
+- **PostgreSQL** - Production veritabanı
+- **SQLite** - Development veritabanı
 - **OOP Prensipleri** - Nesne yönelimli programlama
+- **Service Layer** - İş mantığı katmanı
 
 ### Frontend
 - **Vue.js 3** - Modern JavaScript framework
 - **Inertia.js** - SPA deneyimi
-- **Tailwind CSS** - Styling framework
 - **TypeScript** - Tip güvenliği
+- **Tailwind CSS 4** - Modern styling framework
+- **Reka UI** - UI component library
+- **Lucide Icons** - Modern icon set
+
+### DevOps & Tools
+- **Docker** - Containerization
+- **Docker Compose** - Multi-container orchestration
+- **Caddy** - Web server (production)
+- **Nginx** - Web server (development)
+- **Vite** - Build tool
+- **ESLint & Prettier** - Code formatting
 
 ### Test
-- **PHPUnit/Pest** - Unit testler
-- **Kapsamlı Test Coverage** - %100 test coverage
+- **Pest** - Modern PHP testing framework
+- **Kapsamlı Test Coverage** - Unit ve feature testler
 
 ## 🚀 Kurulum
 
@@ -47,9 +61,37 @@
 - PHP 8.2+
 - Composer
 - Node.js 18+
-- MySQL/SQLite
+- PostgreSQL (production) / SQLite (development)
+- Docker & Docker Compose (opsiyonel)
 
-### Adımlar
+### Docker ile Hızlı Başlangıç
+
+1. **Projeyi klonlayın**
+```bash
+git clone <repository-url>
+cd champions-league
+```
+
+2. **Docker ile başlatın**
+```bash
+# Development
+docker-compose up -d
+
+# Production
+docker-compose -f docker-compose.production.yml up -d
+```
+
+3. **Veritabanını kurun**
+```bash
+docker-compose exec app php artisan migrate:fresh --seed
+```
+
+4. **Tarayıcıda açın**
+```
+http://localhost
+```
+
+### Manuel Kurulum
 
 1. **Projeyi klonlayın**
 ```bash
@@ -80,11 +122,7 @@ php artisan migrate:fresh --seed
 
 6. **Uygulamayı başlatın**
 ```bash
-# Terminal 1 - Backend
-php artisan serve
-
-# Terminal 2 - Frontend
-npm run dev
+composer run dev
 ```
 
 7. **Tarayıcıda açın**
@@ -97,9 +135,9 @@ http://localhost:8000
 ### Teams Tablosu
 - `id` - Takım ID
 - `name` - Takım adı
-- `power_level` - Güç seviyesi (1-100)
+- `power_level` - Güç seviyesi (88-95)
 - `city` - Şehir
-- `logo` - Logo dosyası
+- `logo` - Logo URL'i
 
 ### Matches Tablosu
 - `id` - Maç ID
@@ -107,7 +145,7 @@ http://localhost:8000
 - `away_team_id` - Deplasman takımı
 - `home_score` - Ev sahibi gol sayısı
 - `away_score` - Deplasman gol sayısı
-- `week` - Hafta numarası
+- `week` - Hafta numarası (1-6)
 - `is_played` - Oynandı mı?
 
 ### League_Standings Tablosu
@@ -125,6 +163,10 @@ http://localhost:8000
 
 ### Testleri çalıştırın
 ```bash
+# Docker ile
+docker-compose exec app php artisan test
+
+# Manuel
 php artisan test
 ```
 
@@ -140,6 +182,11 @@ php artisan test --filter=LeagueServiceTest
 champions-league/
 ├── app/
 │   ├── Http/Controllers/
+│   │   ├── Api/                    # RESTful API controllers
+│   │   │   ├── ChampionsLeagueApiController.php
+│   │   │   ├── GameMatchController.php
+│   │   │   ├── LeagueStandingController.php
+│   │   │   └── TeamController.php
 │   │   └── ChampionsLeagueController.php
 │   ├── Models/
 │   │   ├── Team.php
@@ -152,16 +199,25 @@ champions-league/
 │   ├── migrations/
 │   └── seeders/
 │       └── ChampionsLeagueSeeder.php
-├── resources/js/pages/
-│   ├── Welcome.vue
-│   └── ChampionsLeague/
-│       ├── Index.vue
-│       └── Predictions.vue
+├── resources/js/
+│   ├── components/                 # Vue components
+│   │   ├── ui/                     # Reka UI components
+│   │   ├── LeagueTable.vue
+│   │   ├── MatchRow.vue
+│   │   ├── EditMatchModal.vue
+│   │   └── ChampionshipCelebration.vue
+│   ├── pages/ChampionsLeague/
+│   │   └── Index.vue
+│   └── types/
+│       └── champions-league.d.ts
 ├── routes/
-│   └── web.php
-└── tests/Feature/
-    ├── MatchServiceTest.php
-    └── LeagueServiceTest.php
+│   ├── web.php
+│   └── api.php                     # API routes
+├── docker/                         # Docker configuration
+├── tests/
+│   ├── Feature/
+│   └── Unit/
+└── docker-compose.yml
 ```
 
 ## 🎯 Kullanım
@@ -170,54 +226,26 @@ champions-league/
 2. **Hafta Oynat**: Her haftayı ayrı ayrı oynatın
 3. **Tüm Ligi Oynat**: Tüm maçları otomatik oynatın
 4. **Maç Düzenle**: Oynanmış maçların sonuçlarını değiştirin
-5. **Tahminler**: Gelecek haftalar için tahminleri görüntüleyin
+5. **Tahminler**: 3. haftadan sonra gelecek haftalar için tahminleri görüntüleyin
 
-## 🔧 API Endpoints
+## 🐳 Docker Deployment
 
-### GET `/champions-league/`
-Ana sayfa - Lig tablosu ve maçlar
+### Development
+```bash
+docker-compose up -d
+```
 
-### GET `/champions-league/predictions`
-Tahmin sayfası
+### Production
+```bash
+# Deployment script'ini çalıştır
+chmod +x deploy.sh
+./deploy.sh
 
-### POST `/champions-league/play-week`
-Belirli bir haftayı oynat
+# Manuel deployment
+docker-compose -f docker-compose.production.yml up -d
+```
 
-### POST `/champions-league/play-all`
-Tüm maçları oynat
-
-### PUT `/champions-league/matches/{match}/update`
-Maç sonucunu güncelle
-
-### PUT `/champions-league/matches/{match}/reset`
-Maçı sıfırla
-
-### GET `/champions-league/api/standings`
-Lig tablosu API
-
-### GET `/champions-league/api/matches/{week}`
-Haftalık maçlar API
-
-## 📈 Özellikler Detayı
-
-### Maç Simülasyonu
-- Takım güç seviyeleri dikkate alınır
-- Ev sahibi avantajı (+10% güç)
-- Poisson dağılımı ile gerçekçi gol sayıları
-- Maksimum 5 gol per maç
-
-### Lig Hesaplamaları
-- Premier League puanlama sistemi
-- Gol farkı ile sıralama
-- Otomatik pozisyon güncelleme
-- Tahmin algoritması
-
-### Frontend Özellikleri
-- Responsive tasarım
-- Real-time güncellemeler
-- Modal dialoglar
-- İnteraktif tablolar
-- Görsel istatistikler
+Detaylı deployment bilgileri için [DEPLOYMENT.md](DEPLOYMENT.md) dosyasını inceleyin.
 
 ## 🤝 Katkıda Bulunma
 
@@ -233,7 +261,7 @@ Bu proje MIT lisansı altında lisanslanmıştır.
 
 ## 👨‍💻 Geliştirici
 
-Bu proje Laravel + Vue.js + Inertia.js teknolojileri kullanılarak geliştirilmiştir.
+Bu proje Laravel 12 + Vue.js 3 + Inertia.js + TypeScript teknolojileri kullanılarak geliştirilmiştir.
 
 ---
 
