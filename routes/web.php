@@ -11,5 +11,4 @@ Route::get('/', function () {
 // Champions League Routes
 Route::prefix('champions-league')->name('champions-league.')->group(function () {
     Route::get('/', [ChampionsLeagueController::class, 'index'])->name('index');
-    Route::get('/predictions', [ChampionsLeagueController::class, 'predictions'])->name('predictions');
 });

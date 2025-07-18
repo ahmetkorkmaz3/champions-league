@@ -44,18 +44,4 @@ class ChampionsLeagueController extends Controller
             'standings' => $standings,
         ]);
     }
-
-    /**
-     * Tahmin sayfası
-     */
-    public function predictions(): Response
-    {
-        $currentWeek = GameMatch::where('is_played', true)->max('week') ?? 0;
-        $predictedStandings = $this->leagueService->getPredictedStandings($currentWeek);
-
-        return Inertia::render('ChampionsLeague/Predictions', [
-            'currentWeek' => $currentWeek,
-            'predictedStandings' => $predictedStandings,
-        ]);
-    }
 }

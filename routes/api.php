@@ -48,4 +48,7 @@ Route::prefix('champions-league')->name('api.champions-league.')->group(function
     Route::get('/standings/{standing}', [LeagueStandingController::class, 'show'])->name('standings.show');
     Route::put('/standings/{standing}', [LeagueStandingController::class, 'update'])->name('standings.update');
     Route::delete('/standings/{standing}', [LeagueStandingController::class, 'destroy'])->name('standings.destroy');
+
+    // Predictions route
+    Route::get('/predictions', [ChampionsLeagueApiController::class, 'getPredictions'])->name('predictions');
 });

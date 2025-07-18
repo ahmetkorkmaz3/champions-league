@@ -91,4 +91,18 @@ class ChampionsLeagueApiController extends Controller
             'standings' => LeagueStandingResource::collection($standings),
         ]);
     }
+
+    /**
+     * Get predictions for the league
+     */
+    public function getPredictions(): JsonResponse
+    {
+        $currentWeek = GameMatch::where('is_played', true)->max('week') ?? 0;
+        $predictedStandings = $this->leagueService->getPredictedStandings($currentWeek);
+
+        return response()->json([
+            'currentWeek' => $currentWeek,
+            'predictedStandings' => $predictedStandings,
+        ]);
+    }
 }
