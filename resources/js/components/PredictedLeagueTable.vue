@@ -8,6 +8,7 @@
     :show-championship-probability="true"
     :show-match-analysis="true"
     :current-week="currentWeek"
+    :championship-probabilities="championshipProbabilities"
     info-title="Tahmin Nasıl Hesaplanıyor?"
     :info-content="`Bu tahmin, ${currentWeek}. haftaya kadar oynanan maçların gerçek sonuçları ile kalan maçların simüle edilmiş sonuçları birleştirilerek hesaplanmıştır. Takımların güç seviyeleri ve ev sahibi avantajları dikkate alınmıştır.`"
   />
@@ -20,5 +21,6 @@ import type { PredictedStanding } from '@/types/champions-league'
 defineProps<{
   predictedStandings: PredictedStanding[]
   currentWeek: number
+  championshipProbabilities?: number[]
 }>()
 </script> 

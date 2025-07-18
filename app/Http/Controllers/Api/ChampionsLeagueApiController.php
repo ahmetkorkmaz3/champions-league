@@ -99,10 +99,12 @@ class ChampionsLeagueApiController extends Controller
     {
         $currentWeek = GameMatch::where('is_played', true)->max('week') ?? 0;
         $predictedStandings = $this->leagueService->getPredictedStandings($currentWeek);
+        $championshipProbabilities = $this->leagueService->calculateChampionshipProbabilities($currentWeek);
 
         return response()->json([
             'currentWeek' => $currentWeek,
             'predictedStandings' => $predictedStandings,
+            'championshipProbabilities' => $championshipProbabilities,
         ]);
     }
 }

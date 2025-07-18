@@ -169,6 +169,90 @@ class LeagueService
     }
 
     /**
+     * Şampiyonluk olasılıklarını hesapla
+     */
+    public function calculateChampionshipProbabilities(int $currentWeek = 0): array
+    {
+        $standings = $this->getCurrentStandings();
+        $totalTeams = $standings->count();
+        $maxPoints = 18; // 6 maç x 3 puan
+        $remainingMatches = 6 - $currentWeek;
+        
+        if ($totalTeams === 0) {
+            return [];
+        }
+
+        $probabilities = [];
+        
+        foreach ($standings as $index => $standing) {
+            $team = $standing->team;
+            $currentPoints = $standing->points;
+            $powerLevel = $team->power_level ?? 50;
+            
+            // Temel faktörler - daha dengeli ağırlıklar
+            $pointsFactor = $currentPoints / $maxPoints; // Mevcut puanların maksimum puana oranı
+            $positionFactor = max(0, 1 - ($index / ($totalTeams * 0.7))); // Pozisyon faktörü (daha yumuşak)
+            $powerFactor = $powerLevel / 100; // Güç seviyesi faktörü
+            
+            // Kalan maçlar için potansiyel puan hesaplama
+            $remainingPotentialPoints = $remainingMatches * 3;
+            $maxPossiblePoints = $currentPoints + $remainingPotentialPoints;
+            
+            // Diğer takımların maksimum puanlarını kontrol et
+            $otherTeamsMaxPoints = $standings->map(function ($s) use ($remainingPotentialPoints) {
+                return $s->points + $remainingPotentialPoints;
+            })->toArray();
+            
+            $maxCompetitorPoints = max(array_filter($otherTeamsMaxPoints, function ($key) use ($index) {
+                return $key !== $index;
+            }, ARRAY_FILTER_USE_KEY));
+            
+            // Eğer bu takım diğerlerinden daha fazla puan alabilirse şansı var
+            $canWin = $maxPossiblePoints >= $maxCompetitorPoints;
+            
+            if (!$canWin) {
+                $probabilities[] = 0;
+                continue;
+            }
+            
+            // Şampiyonluk olasılığı hesaplama - daha dengeli ağırlıklar
+            $probability = 0;
+            
+            // Mevcut durum faktörü (%35 ağırlık) - azaltıldı
+            $probability += ($pointsFactor * 0.35);
+            
+            // Pozisyon faktörü (%25 ağırlık) - azaltıldı
+            $probability += ($positionFactor * 0.25);
+            
+            // Güç seviyesi faktörü (%25 ağırlık) - artırıldı
+            $probability += ($powerFactor * 0.25);
+            
+            // Kalan maç avantajı (%15 ağırlık) - artırıldı
+            $remainingAdvantage = $remainingMatches / 6;
+            $probability += ($remainingAdvantage * 0.15);
+            
+            // Belirsizlik faktörü - kalan maç sayısına göre belirsizlik ekle
+            $uncertaintyFactor = min(0.3, $remainingMatches * 0.05); // Kalan her maç için %5 belirsizlik
+            $probability *= (1 - $uncertaintyFactor);
+            
+            // Normalize et (0-100 arası)
+            $probability = round($probability * 100);
+            
+            $probabilities[] = max(0, min(100, $probability));
+        }
+        
+        // Toplam olasılığı 100'e normalize et
+        $totalProbability = array_sum($probabilities);
+        if ($totalProbability > 0) {
+            $probabilities = array_map(function ($prob) use ($totalProbability) {
+                return round(($prob / $totalProbability) * 100);
+            }, $probabilities);
+        }
+        
+        return $probabilities;
+    }
+
+    /**
      * Geçici tablo başlat
      */
     private function initializeTempStandings(): array

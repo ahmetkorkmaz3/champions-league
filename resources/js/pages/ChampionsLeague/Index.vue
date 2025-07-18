@@ -41,6 +41,7 @@
         v-if="showPredictions"
         :predicted-standings="predictedStandings"
         :current-week="currentWeek"
+        :championship-probabilities="championshipProbabilities"
       />
 
       <!-- Matches by Week -->
@@ -120,6 +121,7 @@ const editingMatch = ref<Match | null>(null)
 const showPredictions = ref(false)
 const currentWeek = ref(0)
 const predictedStandings = ref<PredictedStanding[]>([])
+const championshipProbabilities = ref<number[]>([])
 
 // Championship celebration state
 const showChampionshipCelebration = ref(false)
@@ -171,6 +173,7 @@ const loadPredictions = async () => {
     const response = await axios.get(route('api.champions-league.predictions'))
     currentWeek.value = response.data.currentWeek
     predictedStandings.value = response.data.predictedStandings
+    championshipProbabilities.value = response.data.championshipProbabilities || []
     showPredictions.value = true
   } catch (error) {
     console.error('Tahminler yüklenirken hata oluştu:', error)

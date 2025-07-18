@@ -174,10 +174,10 @@
                 <div class="w-12 bg-gray-200 rounded-full h-2 mr-2">
                   <div
                     class="bg-green-600 h-2 rounded-full"
-                    :style="{ width: getChampionshipProbability(index) + '%' }"
+                    :style="{ width: championshipProbabilities[index] + '%' }"
                   ></div>
                 </div>
-                <span class="text-xs text-gray-500">{{ getChampionshipProbability(index) }}%</span>
+                <span class="text-xs text-gray-500">{{ championshipProbabilities[index] }}%</span>
               </div>
             </div>
           </div>
@@ -206,6 +206,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { Standing, PredictedStanding } from '@/types/champions-league'
 
 interface Props {
@@ -219,6 +220,7 @@ interface Props {
   currentWeek?: number
   infoTitle?: string
   infoContent?: string
+  championshipProbabilities?: number[]
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -262,8 +264,7 @@ const getHighestPoints = () => {
   return `${highestPoints.team.name} (${highestPoints.points})`
 }
 
-const getChampionshipProbability = (position: number) => {
-  const probabilities = [60, 25, 15] // İlk 3 takımın şampiyonluk olasılıkları
-  return probabilities[position] || 0
-}
+const championshipProbabilities = computed(() => {
+  return props.championshipProbabilities || []
+})
 </script> 
