@@ -2,6 +2,12 @@
 
 4 takımlı çift devreli lig simülasyonu - Premier League kurallarına göre maç sonuçlarını tahmin edin!
 
+🌐 **Canlı Demo**: [https://champions.ahmetkorkmaz.co](https://champions.ahmetkorkmaz.co)
+
+## 📚 API Dokümantasyonu
+
+Detaylı API dokümantasyonu için [API Docs](https://champions.ahmetkorkmaz.co/docs/api) sayfasını ziyaret edin.
+
 ## 📋 Proje Özellikleri
 
 ### ✅ Temel Özellikler
