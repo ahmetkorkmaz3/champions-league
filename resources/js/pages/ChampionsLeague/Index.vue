@@ -80,16 +80,25 @@
       @close="showEditModal = false"
       @save="saveMatchEdit"
     />
+
+    <!-- Championship Celebration Modal -->
+    <ChampionshipCelebration
+      :show="showChampionshipCelebration"
+      :champion="champion"
+      @close="closeChampionshipCelebration"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import axios from 'axios'
 import MatchRow from '@/components/MatchRow.vue'
 import EditMatchModal from '@/components/EditMatchModal.vue'
 import LeagueTable from '@/components/LeagueTable.vue'
 import PredictedLeagueTable from '@/components/PredictedLeagueTable.vue'
+import ChampionshipCelebration from '@/components/ChampionshipCelebration.vue'
+import { useChampionship } from '@/composables/useChampionship'
 import type { Team, Match, Standing, MatchForm, PredictedStanding } from '@/types/champions-league'
 
 const props = defineProps<{
@@ -111,6 +120,21 @@ const editingMatch = ref<Match | null>(null)
 const showPredictions = ref(false)
 const currentWeek = ref(0)
 const predictedStandings = ref<PredictedStanding[]>([])
+
+// Championship celebration state
+const showChampionshipCelebration = ref(false)
+const { champion, shouldShowChampionshipCelebration } = useChampionship(localStandings, localMatches)
+
+// Watch for championship celebration
+watch(shouldShowChampionshipCelebration, (newValue) => {
+  if (newValue) {
+    showChampionshipCelebration.value = true
+  }
+})
+
+const closeChampionshipCelebration = () => {
+  showChampionshipCelebration.value = false
+}
 
 const isWeekPlayed = (week: number): boolean => {
   return localMatchesByWeek.value[week]?.every(match => match.is_played) || false
