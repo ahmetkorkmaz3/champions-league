@@ -396,6 +396,7 @@ class LeagueService
                     'away_team_id' => $pair[1],
                     'week' => $week + 1,
                     'is_played' => false,
+                    'created_at' => now(),
                 ];
             }
         }
@@ -417,13 +418,15 @@ class LeagueService
                     'away_team_id' => $pair[1],
                     'week' => $week + 1 + ($teamCount - 1),
                     'is_played' => false,
+                    'created_at' => now(),
                 ];
             }
         }
 
-        foreach ($schedule as $matchData) {
-            GameMatch::create($matchData);
-        }
+        GameMatch::insert($schedule);
+        // foreach ($schedule as $matchData) {
+        //     GameMatch::create($matchData);
+        // }
     }
 
     /**
@@ -448,7 +451,7 @@ class LeagueService
     /**
      * Tüm maçları getir (haftalara göre gruplandırılmış)
      */
-    public function getAllMatchesGroupedByWeek(): \Illuminate\Support\Collection
+    public function getAllMatchesGroupedByWeek(): Collection
     {
         $matches = GameMatch::with(['homeTeam', 'awayTeam'])
             ->orderBy('week')
