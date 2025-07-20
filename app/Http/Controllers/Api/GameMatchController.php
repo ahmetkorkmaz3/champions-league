@@ -13,6 +13,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 
 class GameMatchController extends Controller
 {
@@ -93,8 +94,10 @@ class GameMatchController extends Controller
      */
     public function destroy(GameMatch $match): Response
     {
-        $match->delete();
-        $this->leagueService->handleMatchDeletion($match);
+        DB::transaction(function () use ($match) {
+            $match->delete();
+            $this->leagueService->handleMatchDeletion($match);
+        });
 
         return response()->noContent();
     }

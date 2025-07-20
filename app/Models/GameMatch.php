@@ -55,26 +55,10 @@ class GameMatch extends Model
 
         if ($this->home_score > $this->away_score) {
             return $this->homeTeam;
-        } elseif ($this->away_score > $this->home_score) {
-            return $this->awayTeam;
         }
 
-        return null; // Beraberlik
-    }
-
-    /**
-     * Maçın kaybedenini döndür
-     */
-    public function getLoser(): ?Team
-    {
-        if (! $this->is_played) {
-            return null;
-        }
-
-        if ($this->home_score > $this->away_score) {
+        if ($this->away_score > $this->home_score) {
             return $this->awayTeam;
-        } elseif ($this->away_score > $this->home_score) {
-            return $this->homeTeam;
         }
 
         return null; // Beraberlik
@@ -98,41 +82,5 @@ class GameMatch extends Model
         }
 
         return "{$this->home_score} - {$this->away_score}";
-    }
-
-    /**
-     * Ev sahibi takımın puanı
-     */
-    public function getHomeTeamPoints(): int
-    {
-        if (! $this->is_played) {
-            return 0;
-        }
-
-        if ($this->home_score > $this->away_score) {
-            return 3; // Galibiyet
-        } elseif ($this->home_score === $this->away_score) {
-            return 1; // Beraberlik
-        }
-
-        return 0; // Mağlubiyet
-    }
-
-    /**
-     * Deplasman takımının puanı
-     */
-    public function getAwayTeamPoints(): int
-    {
-        if (! $this->is_played) {
-            return 0;
-        }
-
-        if ($this->away_score > $this->home_score) {
-            return 3; // Galibiyet
-        } elseif ($this->away_score === $this->home_score) {
-            return 1; // Beraberlik
-        }
-
-        return 0; // Mağlubiyet
     }
 }
