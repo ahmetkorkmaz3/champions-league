@@ -55,7 +55,7 @@ class ChampionsLeagueApiController extends Controller
             ->orderBy('id')
             ->get();
 
-        $matchesByWeek = $this->leagueService->getAllMatchesGroupedByWeek();
+        $matchesByWeek = $matches->groupBy('week');
         $standings = $this->leagueService->getCurrentStandings();
 
         return response()->json([

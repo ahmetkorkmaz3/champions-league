@@ -370,7 +370,6 @@ class LeagueService
         $teams = Team::all()->pluck('id')->toArray();
         $teamCount = count($teams);
 
-        $weeks = ($teamCount - 1) * 2; // Çift devreli
         $half = $teamCount / 2;
 
         $schedule = [];
@@ -424,9 +423,6 @@ class LeagueService
         }
 
         GameMatch::insert($schedule);
-        // foreach ($schedule as $matchData) {
-        //     GameMatch::create($matchData);
-        // }
     }
 
     /**
