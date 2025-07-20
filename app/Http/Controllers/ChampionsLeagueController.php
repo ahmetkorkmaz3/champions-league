@@ -28,7 +28,8 @@ class ChampionsLeagueController extends Controller
     {
         $teams = Team::all();
         $matches = GameMatch::with(['homeTeam', 'awayTeam'])
-            ->orderBy(['week', 'id'])
+            ->orderBy('week')
+            ->orderBy('id')
             ->get();
 
         $standings = $this->leagueService->getCurrentStandings();
